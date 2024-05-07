@@ -19,6 +19,9 @@ class Token:
     def __str__(self):
         return f"Token( Lex:{self.lex}, Type:{self.token_type})"
 
+    def __eq__(self, value: object) -> bool:
+        return self.lex == value.lex and self.token_type == value.token_type
+
 
 class TokenType(Enum):
     """
@@ -46,6 +49,7 @@ class TokenType(Enum):
     DESTRUCTIVE_ASSIGNMENT = auto()
     NEW = auto()
     AS = auto()
+    IDENTIFIER = auto()
 
     # Data Types
     STRING = auto()
