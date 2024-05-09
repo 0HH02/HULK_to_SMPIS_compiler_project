@@ -1,4 +1,3 @@
-from enum import Enum, auto
 import re
 
 class Token:
@@ -13,7 +12,7 @@ class Token:
         Token's type.
     """
     
-    def __init__(self, lex: str, token_type: Enum, line: int, column: int):
+    def __init__(self, lex: str, token_type, line: int, column: int):
         self.lex = lex
         self.token_type = token_type
         self.line = line
@@ -39,7 +38,7 @@ class TokenPattern:
         Token's type.
     """
  
-    def __init__(self, token_type: Enum, pattern: str, follow = None):
+    def __init__(self, token_type, pattern: str, follow = None):
         self.token_type = token_type
         self.pattern = re.compile(pattern) 
         self.follow = re.compile(follow) if follow else None
@@ -49,78 +48,3 @@ class TokenPattern:
 
     def __repr__(self):
         return str(self)
-
-class TokenType(Enum):
-    # expressions
-    NUMBER = auto()
-    STRING = auto()
-    IDENTIFIER = auto()
-
-    # arithmetic operations
-    PLUS = auto()
-    MINUS = auto()
-    MULTIPLY = auto()
-    DIVIDE = auto()
-    POWER = auto()
-    POWER_V2 = auto()
-    MOD = auto()
-
-    # symbols
-    OPEN_BRACES = auto()
-    CLOSE_BRACES = auto()
-    SEMICOLON = auto()
-    OPEN_PARENTHESIS = auto()
-    CLOSE_PARENTHESIS = auto()
-    ARROW = auto()
-    COMMA = auto()
-    ASSIGNMENT = auto()
-    DESTRUCTIVE_ASSIGNMENT = auto()
-    DOT = auto()
-    COLON = auto()
-    OPEN_BRACKETS = auto()
-    CLOSE_BRACKETS = auto()
-    DOUBLE_PIPE = auto()
-    CONCAT = auto()
-    DOUBLE_CONCAT = auto()
-    LINEBREAK = auto()
-    SPACE = auto()
-    TAB = auto()
-    ESCAPED_QUOTE = auto()
-
-    # keywords
-    FUNCTION = auto()
-    LET = auto()
-    IN = auto()
-    IF = auto()
-    ELIF = auto()
-    ELSE = auto()
-    TRUE = auto()
-    FALSE = auto()
-    WHILE = auto()
-    FOR = auto()
-    TYPE = auto()
-    NEW = auto()
-    INHERITS = auto()
-    IS = auto()
-    AS = auto()
-    PROTOCOL = auto()
-    EXTENDS = auto()
-
-    # relational
-    GREATER = auto()
-    GREATER_EQUAL = auto()
-    LESS = auto()
-    LESS_EQUAL = auto()
-    EQUAL = auto()
-    DIFFERENT = auto()
-    AND = auto()
-    OR = auto()
-    NOT = auto()
-
-    EOF = auto()
-    
-    def __str__(self):
-        return self.name
-       
-
-    # End of File
