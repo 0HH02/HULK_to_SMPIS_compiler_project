@@ -1,8 +1,12 @@
+"""
+This is a module for the purpose of testing the lexer class
+"""
+
 from lexer.lexer import Lexer
 from core.classes.token import Token, TokenType
 
 TESTS: dict[str:Token] = {
-    'let a = 42 in if (a % 2 == 0) print("Even") else print("odd");': [
+    'let a= 42 in if(a %2 ==0) print( "   Even") else print("odd") ;': [
         Token("let", TokenType.LET, 1, 1),
         Token("a", TokenType.IDENTIFIER, 1, 5),
         Token("=", TokenType.ASSIGNMENT, 1, 7),
@@ -18,19 +22,21 @@ TESTS: dict[str:Token] = {
         Token(")", TokenType.RIGHT_PARENTHESIS, 1, 30),
         Token("print", TokenType.IDENTIFIER, 1, 32),
         Token("(", TokenType.LEFT_PARENTHESIS, 1, 37),
-        Token('"Even"', TokenType.STRING_LITERAL, 1, 38),
+        Token('"   Even"', TokenType.STRING_LITERAL, 1, 38),
         Token(")", TokenType.RIGHT_PARENTHESIS, 1, 45),
         Token("else", TokenType.ELSE, 1, 47),
         Token("print", TokenType.IDENTIFIER, 1, 52),
         Token("(", TokenType.LEFT_PARENTHESIS, 1, 57),
         Token('"odd"', TokenType.STRING_LITERAL, 1, 58),
         Token(")", TokenType.RIGHT_PARENTHESIS, 1, 64),
+        Token(";", TokenType.SEMI_COLON, 1, 65),
+        Token("", TokenType.EOF, 1, 65),
     ],
     """
-    let iterable = range(0, 10) in
-        while (iterable.next())
-            let x = iterable.current() in
-                print(x);'
+    let iterable= range(  0,10)in
+        while(iterable.next ( ) )
+            let x= iterable.current()in
+                print( x ) ;
     """: [
         Token("let", TokenType.LET, 1, 1),
         Token("iterable", TokenType.IDENTIFIER, 1, 5),
@@ -63,15 +69,17 @@ TESTS: dict[str:Token] = {
         Token("(", TokenType.LEFT_PARENTHESIS, 4, 14),
         Token("x", TokenType.IDENTIFIER, 4, 15),
         Token(")", TokenType.RIGHT_PARENTHESIS, 4, 16),
+        Token(";", TokenType.SEMI_COLON, 4, 17),
+        Token("", TokenType.EOF, 4, 16),
     ],
     """
-    type Range(min:Number, max:Number) {
-        min = min;
+    type Range(min:   Number,max:Number){
+        min=min     ;
         max = max;
-        current = min - 1;
+        current=min-1;
 
-        next(): Boolean => (self.current := self.current + 1) < max;
-        current(): Number => self.current;
+        next(  )   : Bool => (self.current := self.current+ 1 )< max;
+        current(  ):Number => self.    current;
     """: [
         Token("type", TokenType.TYPE, 1, 1),
         Token("Range", TokenType.IDENTIFIER, 1, 6),
@@ -103,7 +111,7 @@ TESTS: dict[str:Token] = {
         Token("(", TokenType.LEFT_PARENTHESIS, 6, 13),
         Token(")", TokenType.RIGHT_PARENTHESIS, 6, 14),
         Token(":", TokenType.COLON, 6, 16),
-        Token("Boolean", TokenType.BOOL, 6, 19),
+        Token("Bool", TokenType.BOOL, 6, 19),
         Token("=>", TokenType.ARROW_OPERATOR, 6, 26),
         Token("(", TokenType.LEFT_PARENTHESIS, 6, 29),
         Token("self", TokenType.IDENTIFIER, 6, 30),
@@ -129,6 +137,7 @@ TESTS: dict[str:Token] = {
         Token(".", TokenType.DOT, 7, 35),
         Token("current", TokenType.IDENTIFIER, 7, 36),
         Token(";", TokenType.SEMI_COLON, 7, 43),
+        Token("", TokenType.EOF, 7, 43),
     ],
 }
 
@@ -159,8 +168,12 @@ class LexerTester:
             None
         """
         for i, test in enumerate(TESTS):
-            tokens = self.lexer.tokenize()
+            tokens = self.lexer.tokenize(test)
             for j, token in enumerate(tokens):
+                expected_token = TESTS[test][j]
+
                 assert (
-                    token == TESTS[test][j]
+                    token == expected_token
                 ), f"Test {i} failed. Expected {TESTS[test][j]}, got {token}"
+
+            print(f"passed testers [{i+1} / {len(TESTS)}]")

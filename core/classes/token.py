@@ -1,3 +1,7 @@
+"""
+This Module define the Token class and the TokenType Enun
+"""
+
 from enum import Enum, auto
 
 
@@ -110,3 +114,4 @@ class TokenType(Enum):
     MULTI_LINE_COMMENT_START = auto()
     MULTI_LINE_COMMENT_END = auto()
     EOF = auto()
+    DOUBLE_PIPE = auto()
