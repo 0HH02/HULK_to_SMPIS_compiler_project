@@ -5,8 +5,7 @@ The Lexer class is kind of generic because just recive the patterns of the langu
 and tokenize any string
 """
 
-import re
-from core.classes.token import Token, TokenType
+from token_class.token import TokenPattern, TokenType, Token
 from core.exceptions.lexer_exceptions import UnrecognizedTokenException
 
 
@@ -19,10 +18,8 @@ class Lexer:
 
     """
 
-    def __init__(self, patterns: dict[str:TokenType]) -> None:
-        self.regex_patterns: dict[re.Pattern, TokenType] = {}
-        for pattern, token_type in patterns.items():
-            self.regex_patterns[re.compile(pattern)] = token_type
+    def __init__(self, patterns: list[TokenPattern]) -> None:
+        self.patterns: list[TokenPattern] = patterns
 
     def tokenize(self, text: str) -> list[Token]:
         """
@@ -56,20 +53,20 @@ class Lexer:
                 column += 4
                 continue
 
-            for re_pattern, token_type in self.regex_patterns.items():
-                match = re_pattern.match(text, i)
+            for pattern in self.patterns:
+                match = pattern.regex_pattern.match(text, i)
 
                 if match:
-                    # if re_pattern.follow and match.end() < len(text):
-                    # if not re_pattern.follow.match(text, match.end()):
-                    # continue
+                    if pattern.follow and match.end() < len(text):
+                        if not pattern.follow.match(text, match.end()):
+                            continue
 
                     i = match.end()
                     column = match.end()
                     tokens.append(
                         Token(
                             match.group(),
-                            token_type,
+                            pattern.token_type,
                             line_number=line,
                             column_number=column,
                         )

@@ -2,6 +2,8 @@
 This Module define the Token class and the TokenType Enun
 """
 
+import re
+
 from enum import Enum, auto
 
 
@@ -58,7 +60,7 @@ class TokenType(Enum):
     # Data Types
     STRING = auto()
     NUMBER = auto()
-    BOOL = auto()
+    BOOLEAN = auto()
     FUNCTION = auto()
     TYPE = auto()
     INHERITS = auto()
@@ -115,3 +117,20 @@ class TokenType(Enum):
     MULTI_LINE_COMMENT_END = auto()
     EOF = auto()
     DOUBLE_PIPE = auto()
+
+
+class TokenPattern:
+    """
+    Represents a token pattern used for tokenizing input strings.
+
+    Attributes:
+        regex_pattern (str): The regular expression pattern used to match the token.
+        token_type (TokenType): The type of the token.
+        follow (str): The characters that can follow the token.
+
+    """
+
+    def __init__(self, regex_pattern: str, token_type: TokenType, follow: str = None):
+        self.regex_pattern: re.Pattern[str] = re.compile(regex_pattern)
+        self.token_type: TokenType = token_type
+        self.follow: re.Pattern = re.compile(follow) if follow else None
