@@ -152,6 +152,10 @@ class Sentence:
     def __len__(self) -> int:
         return len(self._symbols)
 
+    @property
+    def first(self):
+        return self._symbols[0]
+
 
 class SentenceList:
     """

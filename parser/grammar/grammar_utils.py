@@ -20,14 +20,24 @@ class GrammarUtils:
         Returns:
             dict[Symbol, set[Symbol]]: A dictionary mapping symbols to their FIRST sets.
         """
-        first: dict[Symbol, set[Symbol]] = {}
+        first_set: dict[Symbol, set[Symbol]] = {}
 
         for terminal in grammar.terminals:
-            first[terminal] = {terminal}
+            first_set[terminal] = {terminal}
 
-        for head, body in grammar.productions.items():
-            for sentence in body:
-                if not first[head]:
-                    first[head] = sentence[0]
+        has_changed = True
 
-        return first
+        while has_changed:
+            has_changed = False
+            for head, body in grammar.productions.items():
+                for sentence in body:
+                    old_len = len(first_set[head])
+                    new_first: set = set()
+                    for firsts in first_set[sentence.first]:
+                        new_first.add(firsts)
+                    first_set[head].update(new_first)
+                    has_changed = (
+                        True if len(first_set[head]) == old_len else has_changed
+                    )
+
+        return first_set
