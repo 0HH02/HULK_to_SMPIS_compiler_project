@@ -5,7 +5,7 @@ This Module define the Grammar class and its related classes used in parsing.
 
 class Grammar:
     """
-    Represents a grammar used in parsing.
+    Represents a grammar used in parsing, this grammar don't have epsilon symbol.
 
     Attributes:
         start_symbol: The start symbol of the grammar.
@@ -20,6 +20,33 @@ class Grammar:
         self.terminals = []
         self.non_terminals = []
         self.productions: dict[NonTerminal, SentenceList] = {}
+
+    def set_terminals(self, values: list[str]):
+        """
+        Add a terminal symbol to the grammar.
+
+        Args:
+            value (str): The value of the terminal symbol.
+        """
+
+        new_terminals: list[Symbol] = [Symbol(value, self) for value in values]
+        self.terminals.extend(new_terminals)
+
+        return tuple(new_terminals)
+
+    def set_non_terminal(self, values: list[str]):
+        """
+        Add a non-terminal symbol to the grammar.
+
+        Args:
+            value (str): The value of the non-terminal symbol.
+        """
+        new_non_terminals: list[NonTerminal] = [
+            NonTerminal(value, self) for value in values
+        ]
+        self.non_terminals.extend(new_non_terminals)
+
+        return
 
 
 class Symbol:
@@ -37,6 +64,9 @@ class Symbol:
 
     def __add__(self, other):
         return Sentence([self, other])
+
+    def __eq__(self, other: object) -> bool:
+        return self.value == other.value
 
     def is_terminal(self):
         """
@@ -107,6 +137,9 @@ class Sentence:
             self._symbols.extend(other._symbols)
             return self
         raise TypeError("Invalid type for Sentence addition")
+
+    def __eq__(self, other: object) -> bool:
+        return self._symbols == other._symbols
 
     def __or__(self, other):
         if isinstance(other, Symbol):

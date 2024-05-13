@@ -3,7 +3,7 @@ This is a module for the purpose of testing the lexer class
 """
 
 from lexer.lexer import Lexer
-from lexer.token.token import Token, TokenType
+from lexer.token_class.token import Token, TokenType
 
 TESTS: dict[str:Token] = {
     'let a= 42 in if(a %2 ==0) print( "   Even") else print("odd") ;': [

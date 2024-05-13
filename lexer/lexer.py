@@ -31,9 +31,9 @@ class Lexer:
         Returns:
             A list of tokens representing the input string.
         """
-        tokens = []
-        line = 0
-        column = 0
+        tokens: list[Token] = []
+        line: int = 0
+        column: int = 0
 
         i = 0
         while i < len(text):
@@ -57,6 +57,15 @@ class Lexer:
                 match = pattern.regex_pattern.match(text, i)
 
                 if match:
+
+                    if pattern.token_type == TokenType.LINE_COMMENT:
+                        i = text.find("\n", i)
+                        if i == -1:
+                            break
+                        i, line = i + 1, line + 1
+                        column = 0
+                        break
+
                     if pattern.follow and match.end() < len(text):
                         if not pattern.follow.match(text, match.end()):
                             continue
