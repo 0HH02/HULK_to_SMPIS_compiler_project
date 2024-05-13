@@ -152,8 +152,14 @@ class Sentence:
     def __len__(self) -> int:
         return len(self._symbols)
 
+    def __getitem__(self, key: int) -> Symbol:
+        return self._symbols[key]
+
     @property
-    def first(self):
+    def first(self) -> Symbol:
+        """
+        Returns the first Symbol of the Sentence
+        """
         return self._symbols[0]
 
 
