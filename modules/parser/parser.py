@@ -2,10 +2,10 @@
 This Module contains the Parser of the Hulk Compiler
 """
 
-from parsing_action import ParsingAction
-from grammar.grammar import Grammar
 from core.classes.ast import AST
-from lexer.token_class.token import Token, TokenType
+from modules.lexer.token_class.token import Token, TokenType
+from modules.parser.grammar.grammar import Grammar
+from parsing_action import ParsingAction
 
 
 class Parser:

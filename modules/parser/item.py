@@ -1,7 +1,7 @@
 """
 """
 
-from grammar.grammar import NonTerminal, Sentence, Symbol
+from modules.parser.grammar.grammar import NonTerminal, Symbol, Sentence
 
 
 class Item:

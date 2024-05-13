@@ -1,7 +1,7 @@
 """
 """
 
-from grammar import Grammar, Symbol
+from modules.parser.grammar.grammar import Grammar, Symbol
 
 
 class GrammarUtils:
