@@ -5,8 +5,8 @@ The Lexer class is kind of generic because just recive the patterns of the langu
 and tokenize any string
 """
 
-from token_class.token import TokenPattern, TokenType, Token
-from core.exceptions.lexer_exceptions import UnrecognizedTokenException
+from .token import Token, TokenPattern, TokenType
+from .lexer_exceptions import UnrecognizedTokenException
 
 
 class Lexer:

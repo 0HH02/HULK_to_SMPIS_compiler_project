@@ -3,7 +3,7 @@ This module contains the abstract base class for parsing actions and its subclas
 """
 
 import abc
-from item import Item
+from .grammar.grammar_utils import Item
 
 
 class ParsingAction(abc.ABC):

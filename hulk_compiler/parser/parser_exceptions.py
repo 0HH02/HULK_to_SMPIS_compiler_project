@@ -2,8 +2,6 @@
 This module contains the exceptions that are raised during parsing.
 """
 
-from core.classes.automaton import AutomatonState
-
 
 class ParsingError(Exception):
     """
@@ -27,6 +25,6 @@ class AmbigousGrammarError(ParsingError):
         *args: Additional arguments to be passed to the base class constructor.
     """
 
-    def __init__(self, state: AutomatonState, char: str, *args):
-        print(f"Ambiguous grammar at state {state.value} with char {char}")
+    def __init__(self, state, char: str, *args):
+        print(f"Ambiguous grammar at state {state} with char {char}")
         super().__init__(*args)

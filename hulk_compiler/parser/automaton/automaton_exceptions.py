@@ -1,7 +1,7 @@
 """
 """
 
-from core.classes.automaton import AutomatonState
+from .automaton import AutomatonState
 
 
 class AutomatonException(Exception):

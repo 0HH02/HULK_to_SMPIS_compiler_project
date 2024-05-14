@@ -1,5 +1,10 @@
 """
-This Module define the Grammar class and its related classes used in parsing.
+This Module define the Grammar class and its related classes like 
+Symbol : Represents a symbol in a grammar.
+NonTerminal : Represents a non-terminal symbol in a grammar.
+Terminal : Represents a terminal symbol in a grammar
+Sentence : Represents a list of Symbols
+used in parsing.
 """
 
 
@@ -46,7 +51,7 @@ class Grammar:
         ]
         self.non_terminals.extend(new_non_terminals)
 
-        return
+        return tuple(new_non_terminals)
 
 
 class Symbol:

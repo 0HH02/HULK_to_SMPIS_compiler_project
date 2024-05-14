@@ -1,7 +1,7 @@
 """
 """
 
-from core.exceptions.automaton_exceptions import (
+from .automaton_exceptions import (
     TransitionAlreadyExistsException,
     StateNotInAutomatonException,
     StuckAutomatonException,
