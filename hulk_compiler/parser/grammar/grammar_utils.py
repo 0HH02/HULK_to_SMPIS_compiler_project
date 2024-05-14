@@ -32,6 +32,29 @@ class Item:
             and self.lookahead == other.lookahead
         )
 
+    def __str__(self) -> str:
+        center_item: str = ""
+        for i, symbol in enumerate(self.body):
+            if i == self.dot_position:
+                center_item += "."
+            center_item += symbol.__str__()
+
+        return f"{self.head} --> {center_item} , {self.lookahead}\n"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __hash__(self) -> int:
+        body_hash: int = 0
+        for symbol in self.body:
+            body_hash += symbol.__hash__()
+        return (
+            self.head.__hash__()
+            + body_hash // self.body.first.__hash__()
+            + self.dot_position
+            + self.lookahead.__hash__()
+        )
+
     def can_reduce(self) -> bool:
         """
         Determines whether the current production rule can be reduced.
@@ -63,6 +86,8 @@ class GrammarUtils:
 
         for terminal in grammar.terminals:
             first_set[terminal] = {terminal}
+        for no_terminal in grammar.non_terminals:
+            first_set[no_terminal] = set()
 
         has_changed = True
 
@@ -78,7 +103,7 @@ class GrammarUtils:
 
                     first_set[head].update(new_first)
                     has_changed = (
-                        True if len(first_set[head]) == old_len else has_changed
+                        True if len(first_set[head]) != old_len else has_changed
                     )
 
         return first_set
@@ -105,6 +130,7 @@ class GrammarUtils:
         while has_changed:
             old_len = len(items)
             has_changed = False
+            new_items: set[Item] = set()
             for item in items:
                 item_next_production = item.body[item.dot_position]
                 if not item_next_production.is_terminal():
@@ -117,12 +143,15 @@ class GrammarUtils:
                                     else item.lookahead
                                 )
                             ]:
-                                items.add(
-                                    Item(
-                                        head=item_next_production,
-                                        body=body,
-                                        dot_position=0,
-                                        lookahead=first,
+                                for sentence in body:
+                                    new_items.add(
+                                        Item(
+                                            head=item_next_production,
+                                            body=sentence,
+                                            dot_position=0,
+                                            lookahead=first,
+                                        )
                                     )
-                                )
+            items.update(new_items)
             has_changed = True if len(items) != old_len else has_changed
+        return items

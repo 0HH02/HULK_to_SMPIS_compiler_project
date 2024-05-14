@@ -1,14 +1,16 @@
 """
 """
 
-from modules.parser.grammar.grammar_utils import GrammarUtils
-from modules.parser.grammar.grammar import Grammar
-
-grammar = Grammar()
-
-plus, mul, minus, div = grammar.set_terminals(["+", "*", "-", "/"])
-expr, term, factor = grammar.set_non_terminal(["E", "T", "F"])
+from hulk_compiler.parser.grammar.grammar import Grammar
+from hulk_compiler.parser.grammar.grammar_utils import GrammarUtils
 
 
-firsts = GrammarUtils.get_firsts(grammar)
-print(firsts)
+class GrammarTester:
+    def __init__(self, grammar: Grammar) -> None:
+        self.grammar = grammar
+
+    def run_first_tests(self):
+        return GrammarUtils.get_firsts(self.grammar)
+
+    def run_clousure(self, items, first):
+        return GrammarUtils.get_clousure(self.grammar, items, first)

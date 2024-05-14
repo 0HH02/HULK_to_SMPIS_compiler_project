@@ -22,8 +22,8 @@ class Grammar:
 
     def __init__(self):
         self.start_symbol = None
-        self.terminals = []
-        self.non_terminals = []
+        self.terminals: list[Symbol] = []
+        self.non_terminals: list[NonTerminal] = []
         self.productions: dict[NonTerminal, SentenceList] = {}
 
     def set_terminals(self, values: list[str]):
@@ -39,7 +39,7 @@ class Grammar:
 
         return tuple(new_terminals)
 
-    def set_non_terminal(self, values: list[str]):
+    def set_non_terminals(self, values: list[str]):
         """
         Add a non-terminal symbol to the grammar.
 
@@ -73,6 +73,15 @@ class Symbol:
     def __eq__(self, other: object) -> bool:
         return self.value == other.value
 
+    def __hash__(self) -> int:
+        return hash(self.value)
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
     def is_terminal(self):
         """
         Check if the current grammar symbol is a terminal.
@@ -92,7 +101,7 @@ class NonTerminal(Symbol):
     for non-terminal symbols.
     """
 
-    def __rshift__(self, other):
+    def __le__(self, other):
         """
         Defines a production for the non-terminal symbol.
 
@@ -100,7 +109,8 @@ class NonTerminal(Symbol):
             other (Symbol or Sentence): The symbol or sentence to be added to the production.
 
         Raises:
-            TypeError: If the `other` argument is not an instance of `Symbol` or `Sentence`.
+            TypeError: If the `other` argument is not an instance of `Symbol`,`Sentence` or
+            `SentenceList`.
         """
         if isinstance(other, Symbol):
             if not self.grammar.productions.__contains__(self):
@@ -119,6 +129,16 @@ class NonTerminal(Symbol):
                 self.grammar.productions[self] = other
             else:
                 self.grammar.productions[self].append(other)
+
+    def __add__(self, other):
+        return Sentence([self, other])
+
+    def __or__(self, other):
+        if isinstance(other, Symbol):
+            return SentenceList([Sentence([self]), Sentence([other])])
+        if isinstance(other, Sentence):
+            return SentenceList([Sentence([self]), other])
+        raise TypeError()
 
 
 class Sentence:
@@ -154,11 +174,20 @@ class Sentence:
 
         raise TypeError("Invalid type for Sentence or")
 
+    def __iter__(self):
+        return iter(self._symbols)
+
     def __len__(self) -> int:
         return len(self._symbols)
 
     def __getitem__(self, key: int) -> Symbol:
         return self._symbols[key]
+
+    def __str__(self) -> str:
+        return self._symbols.__str__()
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     @property
     def first(self) -> Symbol:
@@ -190,8 +219,17 @@ class SentenceList:
         return iter(self._sentences)
 
     def __or__(self, other):
-        self._sentences.append(other)
+        if isinstance(other, Sentence):
+            self._sentences.append(other)
+        elif isinstance(other, Symbol):
+            self._sentences.append(Sentence([other]))
         return self
+
+    def __str__(self) -> str:
+        return self._sentences.__str__()
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     def append(self, other):
         """
