@@ -10,24 +10,9 @@ from hulk_compiler.parser.grammar.grammar_utils import Item
 
 grammar = Grammar()
 
-eq, plus, num, eof = grammar.set_terminals(["=", "+", "i", "$"])
-expr, a, init = grammar.set_non_terminals(["E", "A", "S"])
+plus, semicolon = grammar.set_terminals(["+", ";"])
+expr, term = grammar.set_non_terminals(["E", "T"])
 
-init <= expr
-expr <= a + eq + a | num
-a <= num + a | num
+expr <= term + plus + ~term + ~semicolon
 
-
-tester = GrammarTester(grammar)
-
-# print(tester.run_first_tests())
-
-
-items = {Item(head=init, body=Sentence([expr]), dot_position=0, lookahead=eof)}
-
-print(
-    tester.run_clousure(
-        items,
-        tester.run_first_tests(),
-    )
-)
+print(grammar.productions)
