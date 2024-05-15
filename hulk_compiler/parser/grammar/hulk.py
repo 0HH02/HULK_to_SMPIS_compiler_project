@@ -1,5 +1,5 @@
-from grammar.grammar import Grammar, Epsilon
-from core.classes.token import TokenType
+from .grammar import Grammar
+from ...lexer.token import TokenType
 
 
 def get_hulk_grammar() -> Grammar:
@@ -71,14 +71,14 @@ def get_hulk_grammar() -> Grammar:
         type_declaration,
     ) = grammar.non_terminals(
         """define_statement statement type_definition function_definition protocol_definition expression_block
-        statement_list if_expression invocation_expression expression aritmetic_expression 
-        mult_expression exponential_expression unary_expression primary_expression literal vector indexed_value arguments 
-        argument_list destructive_assignment member_access optional_type_declaration multiple_declaration 
-        arguments_definition argument_list_definition or_expression and_expression equality_expression 
-        relational_expression if_statement elif_statement attribute_definition type_inherits 
-        inherits_declaration type_body type_element type_arguments instantiation extends_definition 
-        protocol_body protocol_arguments_definition extends_multiple_identifier protocol_multiple_arguments_definition 
-        vector_element head_program elif_expression concat_expression control_statement 
+        statement_list if_expression invocation_expression expression aritmetic_expression
+        mult_expression exponential_expression unary_expression primary_expression literal vector indexed_value arguments
+        argument_list destructive_assignment member_access optional_type_declaration multiple_declaration
+        arguments_definition argument_list_definition or_expression and_expression equality_expression
+        relational_expression if_statement elif_statement attribute_definition type_inherits
+        inherits_declaration type_body type_element type_arguments instantiation extends_definition
+        protocol_body protocol_arguments_definition extends_multiple_identifier protocol_multiple_arguments_definition
+        vector_element head_program elif_expression concat_expression control_statement
         while_header for_header let_header control_expression inline_function block_function type_declaration"""
     )
 
