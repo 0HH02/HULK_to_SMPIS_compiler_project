@@ -7,6 +7,8 @@ Sentence : Represents a list of Symbols
 used in parsing.
 """
 
+from copy import deepcopy
+
 
 class Grammar:
     """
@@ -68,7 +70,13 @@ class Symbol:
         self.grammar = grammar
 
     def __add__(self, other):
-        return Sentence([self, other])
+        return Sentence([self]).__add__(other)
+
+    def __or__(self, other):
+        return SentenceList([Sentence([self])]).__or__(other)
+
+    def __invert__(self):
+        return SentenceList([Sentence([self]), Sentence([])])
 
     def __eq__(self, other: object) -> bool:
         return self.value == other.value
@@ -130,16 +138,6 @@ class NonTerminal(Symbol):
             else:
                 self.grammar.productions[self].append(other)
 
-    def __add__(self, other):
-        return Sentence([self, other])
-
-    def __or__(self, other):
-        if isinstance(other, Symbol):
-            return SentenceList([Sentence([self]), Sentence([other])])
-        if isinstance(other, Sentence):
-            return SentenceList([Sentence([self]), other])
-        raise TypeError()
-
 
 class Sentence:
     """
@@ -157,22 +155,21 @@ class Sentence:
     def __add__(self, other):
         if isinstance(other, Symbol):
             self._symbols.append(other)
-            return self
-        if isinstance(other, Sentence):
+        elif isinstance(other, Sentence):
             self._symbols.extend(other._symbols)
-            return self
-        raise TypeError("Invalid type for Sentence addition")
+        elif isinstance(other, SentenceList):
+            sentence_list = SentenceList([])
+            for sentence in other:
+                self_sentence = deepcopy(self)
+                sentence_list.append(self_sentence.extend(sentence._symbols))
+            return sentence_list
+        return self
 
     def __eq__(self, other: object) -> bool:
         return self._symbols == other._symbols
 
     def __or__(self, other):
-        if isinstance(other, Symbol):
-            return SentenceList([self, Sentence([other])])
-        if isinstance(other, Sentence):
-            return SentenceList([self, other])
-
-        raise TypeError("Invalid type for Sentence or")
+        return SentenceList([self]).__or__(other)
 
     def __iter__(self):
         return iter(self._symbols)
@@ -188,6 +185,31 @@ class Sentence:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def append(self, item):
+        """
+        Appends the given object to the list of symbols in the sentence.
+
+        Args:
+            item: The object to be appended.
+
+        Returns:
+            self: The Sentence object after appending the object.
+        """
+        self._symbols.append(item)
+
+    def extend(self, items):
+        """
+        Extends the list of symbols in the sentence with the given list of items.
+
+        Args:
+            items (list[Symbol]): The list of items to be appended.
+
+        Returns:
+            self: The Sentence object after extending the list of symbols.
+        """
+        self._symbols.extend(items)
+        return self
 
     @property
     def first(self) -> Symbol:
@@ -217,6 +239,20 @@ class SentenceList:
 
     def __iter__(self):
         return iter(self._sentences)
+
+    def __add__(self, other):
+        if isinstance(other, Sentence):
+            for sentence in self._sentences:
+                sentence.extend(other)
+        elif isinstance(other, SentenceList):
+            new_sentence_list = SentenceList([])
+            for sentence in self._sentences:
+                for other_sentence in other:
+                    self_sentence = deepcopy(sentence)
+                    new_sentence_list.append(self_sentence.extend(other_sentence))
+            return new_sentence_list
+
+        return self
 
     def __or__(self, other):
         if isinstance(other, Sentence):
