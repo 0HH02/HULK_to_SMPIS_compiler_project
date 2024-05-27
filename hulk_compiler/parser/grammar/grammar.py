@@ -197,6 +197,9 @@ class Sentence:
             return sentence_list
         return self
 
+    def __invert__(self):
+        return SentenceList([self, Sentence([])])
+
     def __eq__(self, other: object) -> bool:
         return self._symbols == other._symbols
 
@@ -276,6 +279,9 @@ class SentenceList:
         if isinstance(other, Sentence):
             for sentence in self._sentences:
                 sentence.extend(other)
+        elif isinstance(other, Symbol):
+            for sentence in self._sentences:
+                sentence.append(other)
         elif isinstance(other, SentenceList):
             new_sentence_list = SentenceList([])
             for sentence in self._sentences:

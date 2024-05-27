@@ -175,10 +175,6 @@ class ParserLR1:
                     go_to[count][symbol] = num_states
                 else:
                     go_to[count] = {symbol: num_states}
-                # for new_item in new_items:
-                #     if new_item not in item_in_state:
-                #         item_in_state[new_item] = set()
-                #     item_in_state[new_item].add(num_states)
 
                 states_kernels[new_kernel] = num_states
 
