@@ -4,7 +4,6 @@ This Module contains the Parser of the Hulk Compiler
 from collections import deque
 from hulk_compiler.lexer.token import Token, TokenType
 from .grammar.grammar import Grammar
-from .ast.ast import AST
 from .parsing_action import ParsingAction, Item, Shift, Reduce, Accept
 
 
@@ -58,12 +57,13 @@ class Parser:
                     token_stack.pop()
                     state_stack.pop()
                 state = state_stack[-1]
-                state_stack.append(action.production.head)
+                token_stack.append(action.production.head)
                 state_stack.append(automaton[state][action[1]])
             elif isinstance(action, Accept):
                 return True
             else:
                 return False
+
 
     def _compile_grammar(self) -> list[dict[TokenType, ParsingAction]]:
         """

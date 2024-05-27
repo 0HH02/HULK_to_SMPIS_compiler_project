@@ -166,9 +166,9 @@ def get_hulk_grammar() -> Grammar:
         + close_brace
     )
 
-    type_body %= type_body + attribute_definition
-    type_body %= type_body + function_definition
-    type_body %= epsilon
+    type_body %= type_body + attribute_definition, lambda h, s: 
+    type_body %= type_body + function_definition, lambda h, s: 
+    type_body %= epsilon , lambda h, s: ([], [])
 
     attribute_definition %= (
         identifier
