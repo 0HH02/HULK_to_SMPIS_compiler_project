@@ -8,6 +8,7 @@ used in parsing.
 """
 
 from copy import deepcopy
+from typing import Iterator
 
 
 class Grammar:
@@ -23,8 +24,11 @@ class Grammar:
     """
 
     def __init__(self):
-        self.start_symbol = None
-        self.terminals: list[Symbol] = []
+        eof = Symbol("$", self)
+        self.special_seed = Symbol("S'", self)
+        self.eof = eof
+        self.seed: NonTerminal = None
+        self.terminals: list[Symbol] = [eof]
         self.non_terminals: list[NonTerminal] = []
         self.productions: dict[NonTerminal, SentenceList] = {}
 
@@ -55,6 +59,31 @@ class Grammar:
 
         return tuple(new_non_terminals)
 
+    def set_seed(self, seed):
+        """
+        Sets the seed  or the distinguished for the grammar.
+
+        Parameters:
+        - seed: The NonTerminal distinguished to set for the grammar.
+        """
+        if not self.seed is None and not seed in self.non_terminals:
+            self.non_terminals.append(seed)
+        self.seed = seed
+
+    @property
+    def symbols(self):
+        """
+        Returns a list of all symbols in the grammar, including terminals and non-terminals.
+        """
+        return [*self.terminals, *self.non_terminals]
+
+    @property
+    def num_symbols(self) -> int:
+        """
+        Returns the total amount of symbols in the grammar.
+        """
+        return len(self.terminals) + len(self.non_terminals)
+
 
 class Symbol:
     """
@@ -79,7 +108,10 @@ class Symbol:
         return SentenceList([Sentence([self]), Sentence([])])
 
     def __eq__(self, other: object) -> bool:
-        return self.value == other.value
+        if isinstance(other, Symbol):
+            return self.value == other.value
+
+        return False
 
     def __hash__(self) -> int:
         return hash(self.value)
@@ -90,7 +122,7 @@ class Symbol:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def is_terminal(self):
+    def is_terminal(self) -> bool:
         """
         Check if the current grammar symbol is a terminal.
 
@@ -168,10 +200,10 @@ class Sentence:
     def __eq__(self, other: object) -> bool:
         return self._symbols == other._symbols
 
-    def __or__(self, other):
+    def __or__(self, other) -> "SentenceList":
         return SentenceList([self]).__or__(other)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Symbol]:
         return iter(self._symbols)
 
     def __len__(self) -> int:

@@ -2,6 +2,8 @@
 This module contains the exceptions that are raised during parsing.
 """
 
+from .parsing_action import ParsingAction, Reduce
+
 
 class ParsingError(Exception):
     """
@@ -25,6 +27,22 @@ class AmbigousGrammarError(ParsingError):
         *args: Additional arguments to be passed to the base class constructor.
     """
 
-    def __init__(self, state, char: str, *args):
+    def __init__(self, state: int, char: str, *args):
         print(f"Ambiguous grammar at state {state} with char {char}")
+        super().__init__(*args)
+
+
+class ConflictActionError(ParsingError):
+    """Exception raised for conflict actions during parsing.
+
+    Attributes:
+        state (int): The state where the conflict occurred.
+        char (str): The symbol causing the conflict.
+        action (ParsingAction): The type of parsing action causing the conflict.
+        args: Additional arguments to be passed to the base class constructor.
+    """
+
+    def __init__(self, state: int, char: str, action: ParsingAction, *args):
+        conflict = "Reduce-Reduce" if action is Reduce else "Shift-Reduce"
+        print(f"{conflict} conflict at state {state} with symbol {char}")
         super().__init__(*args)

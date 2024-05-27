@@ -2,20 +2,21 @@
 This module contains the abstract base class for parsing actions and its subclasses.
 """
 
-import abc
-from .grammar.grammar_utils import Item
+from abc import ABC
+from dataclasses import dataclass
+from .grammar.grammar import NonTerminal, Sentence
 
 
-class ParsingAction(abc.ABC):
+class ParsingAction(ABC):
     """
     Abstract base class for parsing actions.
     """
 
-    @abs.abstractmethod
     def __init__(self):
         pass
 
 
+@dataclass
 class Shift(ParsingAction):
     """
     Represents a shift action in the parsing table.
@@ -24,10 +25,10 @@ class Shift(ParsingAction):
         next_state (AutomatonState): The state to shift to.
     """
 
-    def __init__(self, next_state):
-        self.next_state = next_state
+    next_state: int
 
 
+@dataclass
 class Reduce(ParsingAction):
     """
     Represents a reduce action in the parsing table.
@@ -36,15 +37,24 @@ class Reduce(ParsingAction):
         production (Production): The production to reduce by.
     """
 
-    def __init__(self, item: Item, next_state: int):
-        self.production = item
-        self.next_state: int = next_state
+    head: NonTerminal
+    body: Sentence
 
 
+@dataclass
+class GoTo(ParsingAction):
+    """
+    Represents a parsing action that transitions to the next state.
+
+    Attributes:
+        next_state (int): The next state to transition to.
+    """
+
+    next_state: int
+
+
+@dataclass
 class Accept(ParsingAction):
     """
     Represents an accept action in the parsing table.
     """
-
-    def __init__(self):
-        pass

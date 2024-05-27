@@ -1,4 +1,5 @@
 """
+This module contains utility classes and functions for working with grammars in the parse Module.
 """
 
 from .grammar import Grammar, NonTerminal, Sentence, Symbol
@@ -34,12 +35,17 @@ class Item:
 
     def __str__(self) -> str:
         center_item: str = ""
+        point_setted: bool = False
         for i, symbol in enumerate(self.body):
             if i == self.dot_position:
                 center_item += "."
+                point_setted = True
             center_item += symbol.__str__()
 
-        return f"{self.head} --> {center_item} , {self.lookahead}\n"
+        if not point_setted:
+            center_item += "."
+
+        return f"< {self.head} --> {center_item} , {self.lookahead} > "
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -47,14 +53,21 @@ class Item:
     def __hash__(self) -> int:
         body_hash: int = 0
         for symbol in self.body:
-            body_hash += symbol.__hash__()
+            body_hash += symbol.__hash__() // len(self.body)
         return (
             self.head.__hash__()
             + body_hash // self.body.first.__hash__()
             + self.dot_position
             + self.lookahead.__hash__()
-        )
+        ) // 4
 
+    def move_dot(self) -> "Item":
+        """
+        Moves the dot position one position to the right.
+        """
+        return Item(self.head, self.body, self.dot_position + 1, self.lookahead)
+
+    @property
     def can_reduce(self) -> bool:
         """
         Determines whether the current production rule can be reduced.
@@ -64,6 +77,16 @@ class Item:
             can be reduced.
         """
         return self.dot_position == len(self.body)
+
+    @property
+    def next_symbol(self) -> Symbol:
+        """
+        Returns the next symbol in the body of the production rule.
+
+        Returns:
+            Symbol: The next symbol in the body of the production rule.
+        """
+        return self.body[self.dot_position] if not self.can_reduce else None
 
 
 class GrammarUtils:
@@ -125,33 +148,34 @@ class GrammarUtils:
         Returns:
             set[Item]: The closure of the input set of items.
         """
-
+        # TODO refactor this
         has_changed = True
         while has_changed:
             old_len = len(items)
             has_changed = False
             new_items: set[Item] = set()
             for item in items:
-                item_next_production = item.body[item.dot_position]
-                if not item_next_production.is_terminal():
-                    for head, body in gramar.productions.items():
-                        if head == item_next_production:
-                            for first in firsts[
-                                (
-                                    item.body[item.dot_position + 1]
-                                    if item.dot_position < len(item.body) - 1
-                                    else item.lookahead
-                                )
-                            ]:
-                                for sentence in body:
-                                    new_items.add(
-                                        Item(
-                                            head=item_next_production,
-                                            body=sentence,
-                                            dot_position=0,
-                                            lookahead=first,
-                                        )
+                if not item.can_reduce:
+                    item_next_production = item.body[item.dot_position]
+                    if not item_next_production.is_terminal():
+                        for head, body in gramar.productions.items():
+                            if head == item_next_production:
+                                for first in firsts[
+                                    (
+                                        item.body[item.dot_position + 1]
+                                        if item.dot_position < len(item.body) - 1
+                                        else item.lookahead
                                     )
+                                ]:
+                                    for sentence in body:
+                                        new_items.add(
+                                            Item(
+                                                head=item_next_production,
+                                                body=sentence,
+                                                dot_position=0,
+                                                lookahead=first,
+                                            )
+                                        )
             items.update(new_items)
             has_changed = True if len(items) != old_len else has_changed
         return items

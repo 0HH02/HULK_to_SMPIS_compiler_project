@@ -1,14 +1,17 @@
 """
+This Module contains the Automaton for compile the grammar for the parser,
+Build the Action Table and the Goto Table
 """
 
-from .automaton_exceptions import (
-    TransitionAlreadyExistsException,
-    StateNotInAutomatonException,
-    StuckAutomatonException,
-)
+from hulk_compiler.parser.grammar.grammar import Symbol
 
 
-class AutomatonState:
+from ..grammar.grammar_utils import Item, GrammarUtils
+from ..grammar.grammar import Grammar, Sentence
+from ..parsing_action import ParsingAction, Shift, Accept, Reduce
+
+
+class ParserAutomatonState:
     """
     Represents a state in an automaton.
 
@@ -18,12 +21,20 @@ class AutomatonState:
             to other states in the automaton.
     """
 
-    def __init__(self, value, transitions):
-        self.value = value
-        self.transitions: dict[str, AutomatonState] = transitions
+    def __init__(self, items: set[Item]):
+        self.items: set[Item] = items
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __str__(self) -> str:
+        return f"""Items : {self.items} """
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
-class Automaton:
+class ParserAutomaton:
     """
     Represents an automaton with states, transitions, and current state.
 
@@ -36,100 +47,101 @@ class Automaton:
         execution.
     """
 
-    def __init__(
-        self,
-        states: list[AutomatonState],
-        initial_state: AutomatonState,
-        final_states: list[AutomatonState],
-    ) -> None:
-        self.states: list[AutomatonState] = states
-        self.initial_state: AutomatonState = initial_state
-        self.final_states: list[AutomatonState] = final_states
-        self.current_state: AutomatonState = initial_state
-        self.states_stack: list[AutomatonState] = []
+    def __init__(self, grammar: Grammar) -> None:
+        self._grammar: Grammar = grammar
+        self._firsts: dict[Symbol, set[Symbol]] = GrammarUtils.get_firsts(grammar)
+        self._states: dict[int, ParserAutomatonState] = {}
+        self._go_to: dict[int, dict[Symbol, int]] = {}
+        self._action_table: dict[int, dict[Symbol, ParsingAction]] = {}
+        self._build_action_table()
 
-    def reset(self):
+    def _build_states(self) -> None:
         """
-        Resets the automaton to its initial state.
+        ### Builds the states of the parser automaton.
+
+        This method constructs the states of the parser automaton by iteratively
+        expanding the kernel items and computing the closure of each state.
+
+        ## Returns:
+            None
         """
-        self.current_state = self.initial_state
-        self.states_stack.clear()
+        init_item = Item(
+            self._grammar.special_seed,
+            Sentence([self._grammar.seed]),
+            0,
+            self._grammar.eof,
+        )
 
-    def consume(self, char: str) -> AutomatonState:
-        """
-        Consumes a character and transitions to the next state based on thecurrent state and the
-        character.
+        actual_state = ParserAutomatonState(
+            GrammarUtils.get_clousure(
+                self._grammar,
+                {init_item},
+                self._firsts,
+            ),
+        )
 
-        Args:
-            char (str): The character to consume.
+        num_states: int = 1
 
-        Returns:
-            AutomatonState: The next state after consuming the character.
+        self._states[0] = actual_state
 
-        Raises:
-            StuckAutomatonException: If there is no transition available for thecurrent state and
-            the character.
-        """
-        if char in self.current_state.transitions:
-            self.current_state = self.current_state.transitions[char]
-            self.states_stack.append(self.current_state)
-            return self.current_state
-        else:
-            raise StuckAutomatonException(self.current_state, char)
+        kernels: dict[frozenset[Item], int] = {init_item: 0}
 
-    def go_back(self, value: int) -> None:
-        """
-        Goes back a specified number of states in the automaton's execution history.
+        count: int = 0
 
-        Args:
-            value (int): The number of states to go back.
+        while count < num_states:
+            actual_state: ParserAutomatonState = self._states[count]
 
-        Raises:
-            IndexError: If the value is greater than the number of states in the execution history.
-        """
-        for _ in range(value):
-            self.states_stack.pop()
-        self.current_state = self.states_stack[-1]
+            for symbol in self._grammar.symbols:
+                new_kernel: set[Item] = set()
+                for item in actual_state.items:
+                    if item.next_symbol == symbol:
+                        new_kernel.add(item)
 
-    def has_transition(self, char: str) -> bool:
-        """
-        Checks if there is a transition available for the current state and the character.
+                if len(new_kernel) == 0:
+                    continue
 
-        Args:
-            char (str): The character to check for a transition.
+                f_new_kernel = frozenset(new_kernel)
 
-        Returns:
-            bool: True if there is a transition available, False otherwise.
-        """
-        return char in self.current_state.transitions
+                if f_new_kernel in kernels:
 
-    def add_transition(
-        self, state: AutomatonState, char: str, next_state: AutomatonState
-    ) -> None:
-        """
-        Adds a transition from a state to the next state for a given character.
+                    if count in self._go_to:
+                        self._go_to[count][symbol] = kernels[f_new_kernel]
+                    else:
+                        self._go_to[count] = {symbol: kernels[f_new_kernel]}
 
-        Args:
-            state (AutomatonState): The current state.
-            char (str): The character triggering the transition.
-            next_state (AutomatonState): The next state after the transition.
+                    continue
 
-        Raises:
-            StateNotInAutomatonException: If the current state is not in the automaton.
-            TransitionAlreadyExistsException: If a transition already exists for the current
-            state and the character.
-        """
-        if state not in self.states:
-            raise StateNotInAutomatonException(state)
+                kernels[f_new_kernel] = num_states
 
-        if char in self.states[char]:
-            raise TransitionAlreadyExistsException(state, char, next_state)
+                new_state = ParserAutomatonState(
+                    GrammarUtils.get_clousure(
+                        self._grammar,
+                        {item.move_dot() for item in new_kernel},
+                        self._firsts,
+                    ),
+                )
 
-        self.states[char] = next_state
+                self._states[num_states] = new_state
+
+                if count in self._go_to:
+                    self._go_to[count][symbol] = num_states
+                else:
+                    self._go_to[count] = {symbol: num_states}
+
+                num_states += 1
+
+            count += 1
+
+    def _build_action_table(self) -> None:
+
+        pass
 
     @property
-    def get_current_state(self) -> AutomatonState:
+    def states_count(self) -> int:
         """
-        Returns the current state of the automaton.
+        Returns the number of states in the automaton.
+
+        Returns:
+            int: The number of states in the automaton.
         """
-        return self.current_state
+        return len(self._states)

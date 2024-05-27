@@ -1,7 +1,7 @@
 """
 """
 
-from .automaton import AutomatonState
+from .automaton import ParserAutomatonState
 
 
 class AutomatonException(Exception):
@@ -26,9 +26,9 @@ class TransitionAlreadyExistsException(AutomatonException):
 
     def __init__(
         self,
-        state: AutomatonState,
+        state: ParserAutomatonState,
         char: str,
-        transition_next_state: AutomatonState,
+        transition_next_state: ParserAutomatonState,
         *args,
     ):
         print(
@@ -46,7 +46,7 @@ class StateNotInAutomatonException(AutomatonException):
         state (AutomatonState): The state that is not present in the automaton.
     """
 
-    def __init__(self, state: AutomatonState, *args):
+    def __init__(self, state: ParserAutomatonState, *args):
         print(f"State {state.value} not in automaton")
         super().__init__(*args)
 
@@ -60,6 +60,6 @@ class StuckAutomatonException(AutomatonException):
         char (str): The character that caused the automaton to get stuck.
     """
 
-    def __init__(self, state: AutomatonState, char: str, *args):
+    def __init__(self, state: ParserAutomatonState, char: str, *args):
         print(f"Automaton got stuck at state {state.value} with char {char}")
         super().__init__(*args)

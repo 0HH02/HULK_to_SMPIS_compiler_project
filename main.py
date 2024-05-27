@@ -3,16 +3,20 @@
 
 # pylint: disable=pointless-statement
 
-from testers.grammar_tester import GrammarTester
-from hulk_compiler.parser.grammar.grammar import Grammar, Sentence
-from hulk_compiler.parser.grammar.grammar_utils import Item
+from hulk_compiler.parser.grammar.grammar import Grammar
+from hulk_compiler.parser.automaton.automaton import ParserAutomaton
 
+# from hulk_compiler.parser.parser_lr1 import ParserLR1
 
 grammar = Grammar()
 
-plus, semicolon = grammar.set_terminals(["+", ";"])
-expr, term = grammar.set_non_terminals(["E", "T"])
+equal, plus, num = grammar.set_terminals(["=", "+", "i"])
+S, E, A = grammar.set_non_terminals(["S", "E", "A"])
 
-expr <= term + plus + ~term + ~semicolon
+S <= E
+E <= A + equal + A | num
+A <= num + plus + A | num
 
-print(grammar.productions)
+grammar.set_seed(S)
+
+automaton = ParserAutomaton(grammar)
