@@ -4,7 +4,10 @@ This Module contains the Parser of the Hulk Compiler
 from collections import deque
 from hulk_compiler.lexer.token import Token, TokenType
 from .grammar.grammar import Grammar
-from .parsing_action import ParsingAction, Item, Shift, Reduce, Accept
+from .parsing_action import ParsingAction, Shift, Reduce, Accept
+
+from .ast.ast import Node
+
 
 
 class Parser:
@@ -27,7 +30,7 @@ class Parser:
             self._compile_grammar()
         )
 
-    def parse(self, automaton, tokens: list[Token]) -> AST:
+    def parse(self, automaton, tokens: list[Token]) -> Node:
         """
         Parses the input tokens and returns the generated Abstract Syntax Tree (AST).
 
@@ -63,6 +66,11 @@ class Parser:
                 return True
             else:
                 return False
+
+    def create_ast(self, derivations:list) -> Node:
+
+
+
 
 
     def _compile_grammar(self) -> list[dict[TokenType, ParsingAction]]:

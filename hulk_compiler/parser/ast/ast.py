@@ -23,8 +23,9 @@ class Operator(Enum):
     GE = 12
     LE = 13
     CONCAT = 14
-    IS = 15
-    AS = 16
+    DCONCAT = 15
+    IS = 16
+    AS = 17
 
 
 @dataclass
@@ -32,58 +33,56 @@ class Node(ABC):
     """
     Abstract base class for all AST nodes.
     """
-    pass
-
+    
 @dataclass
 class Program(Node):
     """
     Represents a program node in the AST.
     """
-    defines: list[DefineStatement]
-    statements: list[]
+    defines: list["DefineStatement"]
+    statements: list["Expression"]
 
 @dataclass
 class DefineStatement(Node):
     """
     Represents a define statement node in the AST.
     """
-    pass
 
 @dataclass
 class TypeDeclaration(DefineStatement):
     """
     Represents a type declaration node in the AST.
     """
-    identifier: Token
-    params: list
-    inherits: any
-    attributes: list
-    functions: list
+    identifier: str
+    params: list["Parameter"]
+    inherits: "Inherits"
+    attributes: list["AttributeDeclaration"]
+    functions: list["FunctionDeclaration"]
 
 @dataclass
 class Inherits(Node):
     """
     Represents an inherits node in the AST.
     """
-    identifier: Token
-    arguments: list
+    identifier: str
+    arguments: list["Expression"]
 
 @dataclass
 class AttributeDeclaration(Node):
     """
     Represents an attribute declaration node in the AST.
     """
-    identifier: Token
-    type = None
-    expression: any
+    identifier: str
+    expression: "Expression"
+    type:any = None
 
 @dataclass
 class FunctionDeclaration(DefineStatement):
     """
     Represents a function declaration node in the AST.
     """
-    identifier: Token
-    params: list
+    identifier: str
+    params: list[list["Parameter"]]
     body: any
     return_type: any = None
 
@@ -92,15 +91,15 @@ class Parameter(Node):
     """
     Represents a parameter node in the AST.
     """
-    identifier: Token
-    type = None
+    identifier: str
+    type:any = None
 
 @dataclass
 class ProtocolDeclaration(DefineStatement):
     """
     Represents a protocol declaration node in the AST.
     """
-    identifier: Token
+    identifier: str
     extends: list
     functions: list[FunctionDeclaration]
 
@@ -109,7 +108,7 @@ class Expression(Node):
     """
     Represents an expression node in the AST.
     """
-    pass
+    
 
 @dataclass
 class VariableDeclaration(Expression):
@@ -117,33 +116,34 @@ class VariableDeclaration(Expression):
     Represents a variable declaration node in the AST.
     """
     identifier: Token
-    type = None
-    expression: any
+    expression: Expression
+    type: any = None
 
 @dataclass
 class Variable(Expression):
     """
     Represents a variable node in the AST.
     """
-    identifier: Token
-    type = None
-    expression: any
+    identifier: str
+    expression: Expression
+    type: any = None
 
 @dataclass
 class DestructiveAssign(Expression):
     """
     Represents a destructive assignment node in the AST.
     """
-    identifier: Token
-    expression: any
+    identifier: str
+    expression: Expression
 
 @dataclass
 class Call(Expression):
     """
     Represents a function call node in the AST.
     """
-    identifier: Token
-    params: list
+    obj: Expression
+    identifier: str
+    arguments: list["Expression"]
 
 @dataclass
 class Elif(Expression):
@@ -160,16 +160,16 @@ class If(Expression):
     """
     condition: Expression
     body: Expression
-    elifclauses: list
-    elseBody: Expression
+    elif_clauses: list[Elif]
+    else_body: Expression
 
 @dataclass
 class For(Expression):
     """
     Represents a for loop node in the AST.
     """
-    indexIdentifier: Token
-    indexIdentifierTyppe: Token
+    index_identifier: str
+    indexIdentifierTyppe: str
     iterable: Expression
     body: Expression
 
@@ -186,14 +186,14 @@ class ExpressionBlock:
     """
     Represents an expression block node in the AST.
     """
-    body: list
+    body: list[Expression]
 
 @dataclass
 class LetVar(Expression):
     """
     Represents a let variable node in the AST.
-    """
-    declarations: list
+    """ 
+    declarations: list[Expression]
     body: Expression
 
 @dataclass
@@ -201,8 +201,8 @@ class Instanciate(Expression):
     """
     Represents an instantiation node in the AST.
     """
-    identifier: Token
-    params: list
+    identifier: str
+    params: list[Expression]
 
 @dataclass
 class Vector(Expression):
@@ -233,6 +233,20 @@ class BinaryExpression(Node):
 
 @dataclass
 class NotNode(Expression):
+    """
+    Represents a not node in the AST.
+    """
+    expression: Expression
+
+@dataclass
+class PositiveNode(Expression):
+    """
+    Represents a not node in the AST.
+    """
+    expression: Expression
+
+@dataclass
+class NegativeNode(Expression):
     """
     Represents a not node in the AST.
     """
