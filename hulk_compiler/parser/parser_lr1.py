@@ -6,9 +6,9 @@ from collections import deque
 from hulk_compiler.lexer.token import Token
 from .grammar.grammar import Grammar, Symbol, Sentence
 from .grammar.grammar_utils import GrammarUtils, Item
-from .ast.ast import AST
+from .ast.ast import Node
 from .parsing_action import ParsingAction, Shift, Reduce, Accept, GoTo
-from .parser_exceptions import AmbigousGrammarError, ConflictActionError
+from .parser_exceptions import ConflictActionError
 
 
 class ParserLR1:
@@ -25,13 +25,25 @@ class ParserLR1:
         _compile_grammar(): Compiles the grammar rules into an action table.
     """
 
-    def __init__(self, grammar: Grammar):
+    def __init__(self, grammar: Grammar, mapping):
         self._grammar = grammar
+        self._mapping = mapping
         self._action_table: dict[int, dict[Symbol, ParsingAction]] = (
             self._compile_grammar()
         )
 
-    def parse(self, automaton, tokens: list[Token]) -> AST:
+    def __str__(self) -> str:
+        string = ""
+        for state, dct in self._action_table.items():
+            string += f"State {state}\n"
+            for symbol, action in dct.items():
+                string += f"\t{symbol} -> {action}\n"
+        return string
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def parse(self, tokens: list[Token]) -> Node:
         """
         #### Parses the input tokens and returns the generated Abstract Syntax Tree (AST).
 
@@ -45,28 +57,32 @@ class ParserLR1:
         token_stack: deque[Token] = deque()
         state_stack: deque[int] = deque()
         state_stack.append(0)
-        derivations: list[Item] = []
+        derivations: list[tuple] = []
         i = 0
         while True:
             state = state_stack[-1]
             token = tokens[i]
-            action: ParsingAction = automaton[state][token]
+            action: ParsingAction = self._action_table[state][
+                self._mapping[token.token_type]
+            ]
             if isinstance(action, Shift):
                 token_stack.append(token)
                 state_stack.append(action.next_state)
                 i += 1
             elif isinstance(action, Reduce):
-                derivations.append(action.production)
-                for _ in range(len(action.production.body)):
+                derivations.append((action.head, action.body))
+                for _ in range(len(action.body)):
                     token_stack.pop()
                     state_stack.pop()
                 state = state_stack[-1]
-                state_stack.append(action.production.head)
-                state_stack.append(automaton[state][action[1]])
+                token_stack.append(action.head)
+                state_stack.append(self._action_table[state][action.head].next_state)
             elif isinstance(action, Accept):
-                return True
+                break
             else:
-                return False
+                raise Exception()
+
+        return derivations
 
     def _compile_grammar(self) -> dict[int, dict[Symbol, ParsingAction]]:
         """
@@ -78,14 +94,14 @@ class ParserLR1:
 
         states, go_to_table = self._build_states()
 
-        action_table: dict[int, dict[Symbol, ParsingAction]] = []
+        action_table: dict[int, dict[Symbol, ParsingAction]] = {}
 
         for num_state, state_items in states.items():
             action_table[num_state] = {}
             state = action_table[num_state]
             for item in state_items:
                 if item.can_reduce:
-                    if item.head == self._grammar.special_seed:
+                    if item.head == self._grammar.seed:
                         if not self._grammar.eof in state:
                             state[self._grammar.eof] = Accept()
                         else:
@@ -106,31 +122,28 @@ class ParserLR1:
                             state[item.next_symbol] = Shift(
                                 go_to_table[num_state][item.next_symbol]
                             )
-                        else:
-                            raise AmbigousGrammarError(num_state, item.next_symbol)
+
                     else:
                         if not item.next_symbol in state:
                             state[item.next_symbol] = GoTo(
                                 go_to_table[num_state][item.next_symbol]
                             )
-                        else:
-                            raise AmbigousGrammarError(num_state, item.next_symbol)
 
         return action_table
 
     def _build_states(self):
         firsts: dict[Symbol, set[Symbol]] = GrammarUtils.get_firsts(self._grammar)
 
-        init_item = Item(
-            self._grammar.special_seed,
-            Sentence([self._grammar.seed]),
-            0,
-            self._grammar.eof,
-        )
+        initial_items = {
+            Item(self._grammar.seed, sentence, 0, self._grammar.eof)
+            for sentence in self._grammar.productions[self._grammar.seed]
+        }
+
+        print(initial_items)
 
         actual_state_items: set[Item] = GrammarUtils.get_clousure(
             self._grammar,
-            {init_item},
+            initial_items,
             firsts,
         )
 
@@ -138,7 +151,7 @@ class ParserLR1:
 
         states: dict[int, set[Item]] = {0: actual_state_items}
 
-        states_kernels: dict[frozenset[Item], int] = {frozenset([init_item]): 0}
+        states_kernels: dict[frozenset[Item], int] = {frozenset(initial_items): 0}
 
         go_to: dict[int, dict[Symbol, int]] = {}
 

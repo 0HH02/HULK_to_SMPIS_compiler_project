@@ -27,6 +27,9 @@ class Token:
 
     def __eq__(self, value: object) -> bool:
         return self.lex == value.lex and self.token_type == value.token_type
+    
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 class TokenType(Enum):

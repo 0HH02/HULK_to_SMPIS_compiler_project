@@ -7,8 +7,8 @@ Sentence : Represents a list of Symbols
 used in parsing.
 """
 
-from copy import deepcopy
-from typing import Iterator
+from copy import copy
+from ...lexer.token import TokenType
 
 
 class Grammar:
@@ -25,7 +25,6 @@ class Grammar:
 
     def __init__(self):
         eof = Symbol("$", self)
-        self.special_seed = Symbol("S'", self)
         self.eof = eof
         self.seed: NonTerminal = None
         self.terminals: list[Symbol] = [eof]
@@ -99,13 +98,13 @@ class Symbol:
         self.grammar = grammar
 
     def __add__(self, other):
-        return Sentence([self]).__add__(other)
+        return Sentence([self]) + (other)
 
     def __or__(self, other):
-        return SentenceList([Sentence([self])]).__or__(other)
+        return SentenceList([Sentence([self])]) | (other)
 
     def __invert__(self):
-        return SentenceList([Sentence([self]), Sentence([])])
+        return ~Sentence([self])
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Symbol):
@@ -121,6 +120,9 @@ class Symbol:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def __copy__(self) -> "Symbol":
+        return Symbol(self.value, self.grammar)
 
     def is_terminal(self) -> bool:
         """
@@ -153,19 +155,19 @@ class NonTerminal(Symbol):
             `SentenceList`.
         """
         if isinstance(other, Symbol):
-            if not self.grammar.productions.__contains__(self):
+            if not self in self.grammar.productions:
                 self.grammar.productions[self] = SentenceList([Sentence([other])])
             else:
                 self.grammar.productions[self].append(Sentence([other]))
 
         if isinstance(other, Sentence):
-            if not self.grammar.productions.__contains__(self):
+            if not self in self.grammar.productions:
                 self.grammar.productions[self] = SentenceList([other])
             else:
                 self.grammar.productions[self].append(other)
 
         if isinstance(other, SentenceList):
-            if not self.grammar.productions.__contains__(self):
+            if not self in self.grammar.productions:
                 self.grammar.productions[self] = other
             else:
                 self.grammar.productions[self].append(other)
@@ -190,11 +192,8 @@ class Sentence:
         elif isinstance(other, Sentence):
             self._symbols.extend(other._symbols)
         elif isinstance(other, SentenceList):
-            sentence_list = SentenceList([])
-            for sentence in other:
-                self_sentence = deepcopy(self)
-                sentence_list.append(self_sentence.extend(sentence._symbols))
-            return sentence_list
+            return SentenceList([self]) + other
+
         return self
 
     def __invert__(self):
@@ -204,9 +203,9 @@ class Sentence:
         return self._symbols == other._symbols
 
     def __or__(self, other) -> "SentenceList":
-        return SentenceList([self]).__or__(other)
+        return SentenceList([self]) | (other)
 
-    def __iter__(self) -> Iterator[Symbol]:
+    def __iter__(self):
         return iter(self._symbols)
 
     def __len__(self) -> int:
@@ -220,6 +219,9 @@ class Sentence:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def __copy__(self) -> "Sentence":
+        return Sentence([copy(symbol) for symbol in self._symbols])
 
     def append(self, item):
         """
@@ -286,7 +288,7 @@ class SentenceList:
             new_sentence_list = SentenceList([])
             for sentence in self._sentences:
                 for other_sentence in other:
-                    self_sentence = deepcopy(sentence)
+                    self_sentence = copy(sentence)
                     new_sentence_list.append(self_sentence.extend(other_sentence))
             return new_sentence_list
 
@@ -297,6 +299,9 @@ class SentenceList:
             self._sentences.append(other)
         elif isinstance(other, Symbol):
             self._sentences.append(Sentence([other]))
+        elif isinstance(other, SentenceList):
+            self._sentences.extend(other._sentences)
+
         return self
 
     def __str__(self) -> str:
@@ -305,7 +310,7 @@ class SentenceList:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def append(self, other):
+    def append(self, sentence: Sentence):
         """
         Appends the given object to the list of sentences in the grammar.
 
@@ -315,5 +320,5 @@ class SentenceList:
         Returns:
             self: The Grammar object after appending the object.
         """
-        self._sentences.append(other)
+        self._sentences.append(sentence)
         return self
