@@ -4,7 +4,7 @@ This Module contains the Parser of the Hulk Compiler
 
 from collections import deque
 from hulk_compiler.lexer.token import Token
-from .grammar.grammar import Grammar, Symbol, Sentence
+from .grammar.grammar import Grammar, Symbol
 from .grammar.grammar_utils import GrammarUtils, Item
 from .ast.ast import Node
 from .parsing_action import ParsingAction, Shift, Reduce, Accept, GoTo
@@ -76,8 +76,11 @@ class ParserLR1:
                     state_stack.pop()
                 state = state_stack[-1]
                 token_stack.append(action.head)
-                state_stack.append(self._action_table[state][action.head].next_state)
+                go_to = self._action_table[state][action.head]
+                if isinstance(go_to, GoTo):
+                    state_stack.append(go_to.next_state)
             elif isinstance(action, Accept):
+                derivations.append((self._grammar.seed, action.body))
                 break
             else:
                 raise Exception()
@@ -103,7 +106,7 @@ class ParserLR1:
                 if item.can_reduce:
                     if item.head == self._grammar.seed:
                         if not self._grammar.eof in state:
-                            state[self._grammar.eof] = Accept()
+                            state[self._grammar.eof] = Accept(item.body)
                         else:
                             raise ConflictActionError(
                                 num_state, self._grammar.eof, state[self._grammar.eof]

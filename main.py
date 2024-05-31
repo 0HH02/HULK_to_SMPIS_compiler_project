@@ -1,22 +1,16 @@
 """
 """
 
-# pylint: disable=pointless-statement
-
+import time
 from hulk_compiler.lexer.token import Token
-from hulk_compiler.parser.grammar.grammar import Grammar
 from hulk_compiler.parser.grammar.hulk import get_hulk_grammar
 from hulk_compiler.parser.parser_lr1 import ParserLR1
 from hulk_compiler.lexer.lexer import Lexer
 from hulk_compiler.lexer.hulk_token_patterns import TOKEN_PATTERNS
-import time
 
 
 PROGRAM = """
-    let iterable= range(  0,10)in
-        while(iterable.next ( ) )
-            let x= iterable.current()in
-                print( x ) ;
+    5*8;
     """
 
 lexer = Lexer(TOKEN_PATTERNS)

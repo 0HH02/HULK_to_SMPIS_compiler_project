@@ -58,3 +58,5 @@ class Accept(ParsingAction):
     """
     Represents an accept action in the parsing table.
     """
+
+    body: Sentence

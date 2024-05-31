@@ -46,7 +46,7 @@ TOKEN_PATTERNS = [
     TokenPattern("(\\^ | \\*\\*)", TokenType.POWER),
     TokenPattern("\\+", TokenType.PLUS),
     TokenPattern("\\-", TokenType.MINUS),
-    TokenPattern("\\*", TokenType.TIMES, "^\\*"),
+    TokenPattern("\\*", TokenType.TIMES, "[^\\*]"),
     TokenPattern("\\/", TokenType.DIVIDE),
     TokenPattern("%", TokenType.MOD),
     TokenPattern("!=", TokenType.NOT_EQUAL),
@@ -72,6 +72,6 @@ TOKEN_PATTERNS = [
     TokenPattern("false", TokenType.FALSE_LITERAL, "[^a-zA-Z_]"),
     TokenPattern("//", TokenType.LINE_COMMENT),
     TokenPattern("@@", TokenType.DOUBLE_CONCAT_OPERATOR),
-    TokenPattern("@", TokenType.CONCAT_OPERATOR, "^@"),
+    TokenPattern("@", TokenType.CONCAT_OPERATOR, "[^@]"),
     TokenPattern("[a-zA-Z_]([a-zA-Z_0-9])*", TokenType.IDENTIFIER),
 ]
