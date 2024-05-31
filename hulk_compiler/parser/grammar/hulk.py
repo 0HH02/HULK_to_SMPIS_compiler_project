@@ -282,13 +282,19 @@ def get_hulk_grammar() -> Grammar:
         ]
     )
 
-    program <= ~head_program + statement, lambda h, s: Program(s[1], s[2])
+    program <= ~head_program + statement, (
+        lambda h, s: Program(s[1], s[2]),
+        lambda h, s: Program([], s[2]),
+    )
 
-    head_program <= ~head_program + define_statement, lambda h, s: s[1] + [s[2]]
+    head_program <= ~head_program + define_statement, (
+        lambda h, s: s[1] + [s[2]],
+        lambda h, s: [s[1]],
+    )
 
     define_statement <= (
         function_terminal + function_definition | type_definition | protocol_definition
-    ), lambda h, s: s[2], lambda h, s: s[1], lambda h, s: s[1]
+    ), (lambda h, s: s[2], lambda h, s: s[1], lambda h, s: s[1])
 
     type_definition <= (
         type_terminal
@@ -313,28 +319,61 @@ def get_hulk_grammar() -> Grammar:
                 for definition in s[6]
                 if isinstance(definition, FunctionDeclaration)
             ],
-        )
+        ),
+        lambda h, s: TypeDeclaration(
+            identifier=s[2],
+            params=s[3],
+            inherits=s[4],
+            attributes=[],
+            functions=[],
+        ),
+        lambda h, s: TypeDeclaration(
+            identifier=s[2],
+            params=s[3],
+            inherits=None,
+            attributes=[
+                definition
+                for definition in s[5]
+                if isinstance(definition, AttributeDeclaration)
+            ],
+            functions=[
+                definition
+                for definition in s[5]
+                if isinstance(definition, FunctionDeclaration)
+            ],
+        ),
+        lambda h, s: TypeDeclaration(
+            identifier=s[2],
+            params=s[3],
+            inherits=None,
+            attributes=[],
+            functions=[],
+        ),
     )
 
     type_body <= (
         ~type_body + attribute_definition | ~type_body + function_definition,
         lambda h, s: s[1] + [s[2]],
+        lambda h, s: [s[2]],
         lambda h, s: s[1] + [s[2]],
+        lambda h, s: [s[1]],
     )
 
-    attribute_definition <= (
-        identifier + ~type_declaration + assignment_terminal + expression + semicolon,
+    attribute_definition <= identifier + ~type_declaration + assignment_terminal + expression + semicolon, (
         lambda h, s: AttributeDeclaration(s[1], s[4], s[2]),
+        lambda h, s: AttributeDeclaration(s[1], s[3]),
     )
 
     type_arguments <= (
-        open_parenthesis + ~argument_list_definition + close_parenthesis,
+        open_parenthesis + ~argument_list_definition + close_parenthesis
+    ), (
         lambda h, s: s[2],
+        lambda h, s: [],
     )
 
-    type_inherits <= (
-        inherits + identifier + ~inherits_declaration,
+    type_inherits <= inherits + identifier + ~inherits_declaration, (
         lambda h, s: Inherits(s[2], s[3]),
+        lambda h, s: Inherits(s[2], []),
     )
 
     type_declaration <= (
@@ -342,15 +381,14 @@ def get_hulk_grammar() -> Grammar:
         | colon + number_type
         | colon + string_type
         | colon + boolean_type
+    ), (lambda h, s: s[2])
+
+    inherits_declaration <= open_parenthesis + ~argument_list + close_parenthesis, (
+        lambda h, s: s[2],
+        lambda h, s: [],
     )
 
-    inherits_declaration <= (open_parenthesis + ~argument_list + close_parenthesis), (
-        lambda h, s: s[2],
-        lambda h, s: s[2],
-        lambda h, s: s[2],
-    )
-
-    function_definition <= inline_function | block_function, lambda h, s: s[1]
+    function_definition <= inline_function | block_function, (lambda h, s: s[1])
 
     inline_function <= (
         identifier
@@ -360,7 +398,12 @@ def get_hulk_grammar() -> Grammar:
         + ~type_declaration
         + inline
         + statement
-    ), lambda h, s: FunctionDeclaration(s[1], s[3], s[7], s[5]),
+    ), (
+        lambda h, s: FunctionDeclaration(s[1], s[3], s[7], s[5]),
+        lambda h, s: FunctionDeclaration(s[1], s[3], s[6]),
+        lambda h, s: FunctionDeclaration(s[1], [], s[6], s[4]),
+        lambda h, s: FunctionDeclaration(s[1], [], s[5]),
+    )
 
     block_function <= (
         identifier
@@ -369,11 +412,21 @@ def get_hulk_grammar() -> Grammar:
         + close_parenthesis
         + ~type_declaration
         + expression_block
-    ), lambda h, s: FunctionDeclaration(s[1], s[3], s[6], s[5])
+    ), (
+        lambda h, s: FunctionDeclaration(s[1], s[3], s[6], s[5]),
+        lambda h, s: FunctionDeclaration(s[1], s[3], s[5]),
+        lambda h, s: FunctionDeclaration(s[1], [], s[5], s[4]),
+        lambda h, s: FunctionDeclaration(s[1], [], s[4], []),
+    )
 
     argument_list_definition <= (
         ~(argument_list_definition + comma) + identifier + ~type_declaration
-    ), lambda h, s: s[1] + [Parameter(s[3], s[4])],
+    ), (
+        lambda h, s: s[1] + [Parameter(s[3], s[4])],
+        lambda h, s: s[1] + [Parameter(s[3])],
+        lambda h, s: [Parameter(s[2], s[3])],
+        lambda h, s: [Parameter(s[1])],
+    )
 
     protocol_definition <= (
         protocol
@@ -382,17 +435,21 @@ def get_hulk_grammar() -> Grammar:
         + open_brace
         + ~protocol_body
         + close_brace
-    ), lambda h, s: ProtocolDeclaration(s[2], s[3], s[5])
+    ), (
+        lambda h, s: ProtocolDeclaration(s[2], s[3], s[5]),
+        lambda h, s: ProtocolDeclaration(s[2], s[3], []),
+        lambda h, s: ProtocolDeclaration(s[2], [], s[4]),
+        lambda h, s: ProtocolDeclaration(s[2], [], []),
+    )
 
-    extends_definition <= (
-        extends + identifier + ~extends_multiple_identifier,
+    extends_definition <= (extends + identifier + ~extends_multiple_identifier), (
         lambda h, s: [s[2]] + s[3],
+        lambda h, s: [s[2]],
     )
 
     extends_multiple_identifier <= (
-        comma + identifier + ~extends_multiple_identifier,
-        lambda h, s: [s[2]] + s[3],
-    )
+        comma + identifier + ~extends_multiple_identifier
+    ), (lambda h, s: [s[2]] + s[3], lambda h, s: [s[2]])
 
     protocol_body <= (
         ~protocol_body
@@ -402,27 +459,33 @@ def get_hulk_grammar() -> Grammar:
         + close_parenthesis
         + type_declaration
         + semicolon
-    ), lambda h, s: s[1] + [FunctionDeclaration(s[2], s[4], None, s[6])]
+    ), (
+        lambda h, s: s[1] + [FunctionDeclaration(s[2], s[4], None, s[6])],
+        lambda h, s: s[1] + [FunctionDeclaration(s[2], None, None, s[5])],
+        lambda h, s: [FunctionDeclaration(s[1], s[3], None, s[5])],
+        lambda h, s: [FunctionDeclaration(s[1], None, None, s[4])],
+    )
 
     protocol_arguments_definition <= (
         identifier + type_declaration + ~protocol_multiple_arguments_definition
-    ), lambda h, s: [Parameter(s[1], s[2])] + s[3]
+    ), (
+        lambda h, s: [Parameter(s[1], s[2])] + s[3],
+        lambda h, s: [Parameter(s[1], s[2])],
+    )
 
     protocol_multiple_arguments_definition <= (
         comma + identifier + type_declaration + ~protocol_multiple_arguments_definition
-    ), lambda h, s: [Parameter(s[2], s[3])] + s[4]
+    ), (
+        lambda h, s: [Parameter(s[2], s[3])] + s[4],
+        lambda h, s: [Parameter(s[2], s[3])],
+    )
 
     statement <= (
         expression_block + ~semicolon
         | or_expression + semicolon
         | destructive_assignment + semicolon
         | control_statement
-    ), (
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-    )
+    ), (lambda h, s: s[1])
 
     control_statement <= (
         if_statement
@@ -444,7 +507,10 @@ def get_hulk_grammar() -> Grammar:
         + ~elif_statement
         + else_terminal
         + statement
-    ), lambda h, s: If(s[3], s[5], s[6], s[8])
+    ), (
+        lambda h, s: If(s[3], s[5], s[6], s[8]),
+        lambda h, s: If(s[3], s[5], None, s[7]),
+    )
 
     elif_statement <= (
         ~elif_statement
@@ -453,12 +519,11 @@ def get_hulk_grammar() -> Grammar:
         + expression
         + close_parenthesis
         + statement
-    ), lambda h, s: s[1] + [Elif(s[4], s[6])]
+    ), (lambda h, s: s[1] + [Elif(s[4], s[6])], lambda h, s: [Elif(s[3], s[5])])
 
     while_header <= (
-        while_terminal + open_parenthesis + expression + close_parenthesis,
-        lambda h, s: s[3],
-    )
+        while_terminal + open_parenthesis + expression + close_parenthesis
+    ), (lambda h, s: s[3])
 
     for_header <= (
         for_terminal
@@ -468,7 +533,7 @@ def get_hulk_grammar() -> Grammar:
         + in_terminal
         + expression
         + close_parenthesis
-    ), lambda h, s: [s[3], s[4], s[6]]
+    ), (lambda h, s: [s[3], s[4], s[6]], lambda h, s: [s[3], None, s[5]])
 
     let_header <= (
         let_terminal
@@ -478,7 +543,12 @@ def get_hulk_grammar() -> Grammar:
         + expression
         + ~multiple_declaration
         + in_terminal
-    ), lambda h, s: [VariableDeclaration(s[2], s[3], s[5])] + s[6]
+    ), (
+        lambda h, s: [VariableDeclaration(s[2], s[5], s[3])] + s[6],
+        lambda h, s: [VariableDeclaration(s[2], s[5], s[3])],
+        lambda h, s: [VariableDeclaration(s[2], s[4])] + s[5],
+        lambda h, s: [VariableDeclaration(s[2], s[4])],
+    )
 
     multiple_declaration <= (
         comma
@@ -487,16 +557,16 @@ def get_hulk_grammar() -> Grammar:
         + assignment_terminal
         + expression
         + ~multiple_declaration
-    ), lambda h, s: [VariableDeclaration(s[2], s[3], s[5])] + s[6]
+    ), (
+        lambda h, s: [VariableDeclaration(s[2], s[5], s[3])] + s[6],
+        lambda h, s: [VariableDeclaration(s[2], s[5], s[3])],
+        lambda h, s: [VariableDeclaration(s[2], s[4])] + s[5],
+        lambda h, s: [VariableDeclaration(s[2], s[4])],
+    )
 
     expression <= (
         expression_block | destructive_assignment | or_expression | control_expression
-    ), (
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-    )
+    ), (lambda h, s: s[1])
 
     control_expression <= (
         if_expression
@@ -506,7 +576,7 @@ def get_hulk_grammar() -> Grammar:
     ), (
         lambda h, s: s[1],
         lambda h, s: While(s[1], s[2]),
-        lambda h, s: For(*s[1], s[2]),
+        lambda h, s: For(s[1][0], s[1][1], s[1][2], s[2]),
         lambda h, s: LetVar(s[1], s[2]),
     )
 
@@ -519,7 +589,7 @@ def get_hulk_grammar() -> Grammar:
         + ~elif_expression
         + else_terminal
         + expression
-    ), lambda h, s: If(s[3], s[5], s[6], s[8])
+    ), (lambda h, s: If(s[3], s[5], s[6], s[8]), lambda h, s: If(s[3], s[5], [], s[7]))
 
     elif_expression <= (
         ~elif_expression
@@ -528,28 +598,30 @@ def get_hulk_grammar() -> Grammar:
         + expression
         + close_parenthesis
         + expression
-    ), lambda h, s: s[1] + Elif(s[4], s[6])
+    ), (lambda h, s: s[1] + [Elif(s[4], s[6])], lambda h, s: [Elif(s[3], s[5])])
 
-    expression_block <= open_brace + statement_list + close_brace, lambda h, s: s[2]
+    expression_block <= open_brace + statement_list + close_brace, (lambda h, s: s[2])
 
-    statement_list <= ~statement_list + statement, lambda h, s: s[1] + [s[2]]
+    statement_list <= ~statement_list + statement, (
+        lambda h, s: s[1] + [s[2]],
+        lambda h, s: [s[1]],
+    )
 
     destructive_assignment <= (
         identifier + destructive_assignment_terminal + expression
         | member_access + destructive_assignment_terminal + expression
     ), (
         lambda h, s: DestructiveAssign(s[1], s[3]),
-        lambda h, s: DestructiveAssign(s[1], s[3]),
     )
 
-    or_expression <= (
-        ~(or_expression + or_terminal) + and_expression,
+    or_expression <= ~(or_expression + or_terminal) + and_expression, (
         lambda h, s: BinaryExpression(Operator.OR, s[1], s[3]),
+        lambda h, s: s[1],
     )
 
-    and_expression <= (
-        ~(and_expression + and_terminal) + equality_expression,
+    and_expression <= ~(and_expression + and_terminal) + equality_expression, (
         lambda h, s: BinaryExpression(Operator.AND, s[1], s[3]),
+        lambda h, s: s[1],
     )
 
     equality_expression <= (
@@ -557,6 +629,7 @@ def get_hulk_grammar() -> Grammar:
         | equality_expression + different + relational_expression
     ), (
         lambda h, s: BinaryExpression(Operator.EQ, s[1], s[3]),
+        lambda h, s: s[1],
         lambda h, s: BinaryExpression(Operator.NEQ, s[1], s[3]),
     )
 
@@ -569,6 +642,7 @@ def get_hulk_grammar() -> Grammar:
         | relational_expression + as_terminal + identifier
     ), (
         lambda h, s: BinaryExpression(Operator.LT, s[1], s[3]),
+        lambda h, s: s[1],
         lambda h, s: BinaryExpression(Operator.LE, s[1], s[3]),
         lambda h, s: BinaryExpression(Operator.GT, s[1], s[3]),
         lambda h, s: BinaryExpression(Operator.GE, s[1], s[3]),
@@ -581,6 +655,7 @@ def get_hulk_grammar() -> Grammar:
         | concat_expression + double_concat + aritmetic_expression
     ), (
         lambda h, s: BinaryExpression(Operator.CONCAT, s[1], s[3]),
+        lambda h, s: s[1],
         lambda h, s: BinaryExpression(Operator.DCONCAT, s[1], s[3]),
     )
 
@@ -589,6 +664,7 @@ def get_hulk_grammar() -> Grammar:
         | aritmetic_expression + minus + mult_expression
     ), (
         lambda h, s: BinaryExpression(Operator.ADD, s[1], s[3]),
+        lambda h, s: s[1],
         lambda h, s: BinaryExpression(Operator.SUB, s[1], s[3]),
     )
 
@@ -598,13 +674,14 @@ def get_hulk_grammar() -> Grammar:
         | mult_expression + mod + exponential_expression
     ), (
         lambda h, s: BinaryExpression(Operator.MUL, s[1], s[3]),
+        lambda h, s: s[1],
         lambda h, s: BinaryExpression(Operator.DIV, s[1], s[3]),
         lambda h, s: BinaryExpression(Operator.MOD, s[1], s[3]),
     )
 
-    exponential_expression <= (
-        unary_expression + ~(power + exponential_expression),
+    exponential_expression <= (unary_expression + ~(power + exponential_expression)), (
         lambda h, s: BinaryExpression(Operator.POW, s[1], s[3]),
+        lambda h, s: s[1],
     )
 
     unary_expression <= (
@@ -613,6 +690,7 @@ def get_hulk_grammar() -> Grammar:
         | not_operator + primary_expression
     ), (
         lambda h, s: PositiveNode(s[2]),
+        lambda h, s: s[1],
         lambda h, s: NegativeNode(s[2]),
         lambda h, s: NotNode(s[2]),
     )
@@ -627,21 +705,19 @@ def get_hulk_grammar() -> Grammar:
         | open_parenthesis + expression + close_parenthesis
         | instantiation
     ), (
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-        lambda h, s: s[1],
-        lambda h, s: s[1],
+        *[lambda h, s: s[1]] * 6,
         lambda h, s: s[2],
         lambda h, s: s[1],
     )
 
     invocation_expression <= (
         identifier + open_parenthesis + ~argument_list + close_parenthesis
-    ), lambda h, s: [s[1] + s[3]]
+    ), (lambda h, s: s[1] + s[3], lambda h, s: s[1])
 
-    argument_list <= ~(argument_list + comma) + expression, lambda h, s: s[1] + [s[3]]
+    argument_list <= ~(argument_list + comma) + expression, (
+        lambda h, s: s[1] + [s[3]],
+        lambda h, s: [s[1]],
+    )
 
     vector <= (
         open_bracket + vector_element + close_bracket
@@ -652,13 +728,19 @@ def get_hulk_grammar() -> Grammar:
         + in_terminal
         + expression
         + close_bracket
-    ), lambda h, s: Vector(s[2], None, None, None)
+    ), (
+        lambda h, s: Vector(s[2], None, None, None),
+        lambda h, s: Vector([], s[2], s[4], s[6]),
+    )
 
-    vector_element <= ~(vector_element + comma) + expression, lambda h, s: s[1] + [s[3]]
+    vector_element <= ~(vector_element + comma) + expression, (
+        lambda h, s: s[1] + [s[3]],
+        lambda h, s: [s[1]],
+    )
 
     indexed_value <= (
         primary_expression + open_bracket + primary_expression + close_bracket
-    ), lambda h, s: IndexNode(s[1], s[3])
+    ), (lambda h, s: IndexNode(s[1], s[3]))
 
     member_access <= (
         primary_expression + dot + identifier
@@ -668,16 +750,11 @@ def get_hulk_grammar() -> Grammar:
         lambda h, s: Call(s[1], s[3][0], s[3][1]),
     )
 
-    instantiation <= new + invocation_expression, lambda h, s: Instanciate(
-        s[2][0], s[2][1]
+    instantiation <= new + invocation_expression, (
+        lambda h, s: Instanciate(s[2][0], s[2][1])
     )
 
-    literal <= (number | string | true | false), (
-        lambda h, s: LiteralNode(s[1]),
-        lambda h, s: LiteralNode(s[1]),
-        lambda h, s: LiteralNode(s[1]),
-        lambda h, s: LiteralNode(s[1]),
-    )
+    literal <= (number | string | true | false), (lambda h, s: LiteralNode(s[1]),)
 
     mapping: dict[TokenType, Symbol] = {
         TokenType.NUMBER_LITERAL: number,
