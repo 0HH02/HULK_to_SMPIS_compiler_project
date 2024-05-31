@@ -8,7 +8,6 @@ used in parsing.
 """
 
 from copy import copy
-from ...lexer.token import TokenType
 
 
 class Grammar:
@@ -154,23 +153,55 @@ class NonTerminal(Symbol):
             TypeError: If the `other` argument is not an instance of `Symbol`,`Sentence` or
             `SentenceList`.
         """
-        if isinstance(other, Symbol):
-            if not self in self.grammar.productions:
-                self.grammar.productions[self] = SentenceList([Sentence([other])])
-            else:
-                self.grammar.productions[self].append(Sentence([other]))
+        if isinstance(other, tuple):
+            assert len(other) == 2
+            body, attributation = other
 
-        if isinstance(other, Sentence):
-            if not self in self.grammar.productions:
-                self.grammar.productions[self] = SentenceList([other])
-            else:
-                self.grammar.productions[self].append(other)
+        else:
+            body = other
+            attributation = None
 
-        if isinstance(other, SentenceList):
+        if isinstance(body, Symbol):
+            if callable(attributation):
+                if not self in self.grammar.productions:
+                    self.grammar.productions[self] = SentenceList(
+                        [Sentence([body], attributation)]
+                    )
+                else:
+                    self.grammar.productions[self].append(
+                        Sentence([body], attributation)
+                    )
+
+        if isinstance(body, Sentence):
+            if callable(attributation):
+                body.attributation = attributation
+
             if not self in self.grammar.productions:
-                self.grammar.productions[self] = other
+                self.grammar.productions[self] = SentenceList([body])
             else:
-                self.grammar.productions[self].append(other)
+                self.grammar.productions[self].append(body)
+
+        if isinstance(body, SentenceList):
+            if isinstance(attributation, tuple):
+                assert len(attributation) == len(body)
+
+                for i, sentence in enumerate(body):
+                    if callable(attributation[i]):
+                        sentence.attributation = attributation[i]
+                    else:
+                        print(
+                            f"Warning: attributation must be a callable function,{self} -> {sentence} , {attributation[i]}"
+                        )
+            else:
+                if callable(attributation):
+                    for sentence in body:
+                        sentence.attributation = attributation
+
+            if not self in self.grammar.productions:
+                self.grammar.productions[self] = body
+
+            else:
+                self.grammar.productions[self].append(body)
 
 
 class Sentence:
@@ -183,8 +214,9 @@ class Sentence:
         _symbols (list[Symbol]): The list of symbols in the sentence.
     """
 
-    def __init__(self, symbols: list[Symbol]):
+    def __init__(self, symbols: list[Symbol], attributation=None):
         self._symbols: list[Symbol] = symbols
+        self.attributation = attributation
 
     def __add__(self, other):
         if isinstance(other, Symbol):
