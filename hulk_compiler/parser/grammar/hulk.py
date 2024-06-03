@@ -27,6 +27,7 @@ from hulk_compiler.parser.ast.ast import (
     NegativeNode,
     LiteralNode,
     Operator,
+    Variable,
 )
 from .grammar import Grammar, Symbol
 from ...lexer.token import TokenType
@@ -496,6 +497,7 @@ def get_hulk_grammar() -> Grammar:
         lambda h, s: s[1],
         lambda h, s: While(s[1], s[2]),
         lambda h, s: For(s[1][0], s[1][1], s[1][2], s[2]),
+        lambda h, s: LetVar(s[1], s[2]),
     )
 
     if_statement <= (
@@ -705,7 +707,12 @@ def get_hulk_grammar() -> Grammar:
         | open_parenthesis + expression + close_parenthesis
         | instantiation
     ), (
-        *[lambda h, s: s[1]] * 6,
+        lambda h, s: s[1],
+        lambda h, s: Call(None, s[1][0], s[1][1:]),
+        lambda h, s: Variable(s[1]),
+        lambda h, s: s[1],
+        lambda h, s: s[1],
+        lambda h, s: s[1],
         lambda h, s: s[2],
         lambda h, s: s[1],
     )
