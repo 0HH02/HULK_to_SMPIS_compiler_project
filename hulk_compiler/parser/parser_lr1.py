@@ -6,7 +6,7 @@ from collections import deque
 from hulk_compiler.lexer.token import Token
 from .grammar.grammar import Grammar, Symbol
 from .grammar.grammar_utils import GrammarUtils, Item
-from .ast.ast import Node
+from .ast.ast import ASTNode
 from .parsing_action import ParsingAction, Shift, Reduce, Accept, GoTo
 from .parser_exceptions import ConflictActionError
 
@@ -43,7 +43,7 @@ class ParserLR1:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def parse(self, tokens: list[Token]) -> Node:
+    def parse(self, tokens: list[Token]) -> ASTNode:
         """
         #### Parses the input tokens and returns the generated Abstract Syntax Tree (AST).
 
