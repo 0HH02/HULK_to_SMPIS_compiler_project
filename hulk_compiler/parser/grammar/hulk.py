@@ -50,7 +50,7 @@ def get_hulk_grammar() -> Grammar:
 
     grammar = Grammar()
 
-    program = grammar.set_non_terminals(["program"])
+    program = grammar.set_non_terminals(["program"])[0]
     grammar.set_seed(program)
 
     (
@@ -352,8 +352,7 @@ def get_hulk_grammar() -> Grammar:
         ),
     )
 
-    type_body <= (
-        ~type_body + attribute_definition | ~type_body + function_definition,
+    type_body <= ~type_body + attribute_definition | ~type_body + function_definition, (
         lambda h, s: s[1] + [s[2]],
         lambda h, s: [s[2]],
         lambda h, s: s[1] + [s[2]],
