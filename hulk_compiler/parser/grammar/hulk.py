@@ -50,7 +50,7 @@ def get_hulk_grammar() -> Grammar:
 
     grammar = Grammar()
 
-    program = grammar.set_non_terminals(["program"])
+    program = grammar.set_non_terminals(["program"])[0]
     grammar.set_seed(program)
 
     (
@@ -295,7 +295,11 @@ def get_hulk_grammar() -> Grammar:
 
     define_statement <= (
         function_terminal + function_definition | type_definition | protocol_definition
-    ), (lambda h, s: s[2], lambda h, s: s[1], lambda h, s: s[1])
+    ), (
+        lambda h, s: s[2],
+        lambda h, s: s[1],
+        lambda h, s: s[1],
+    )
 
     type_definition <= (
         type_terminal
@@ -354,10 +358,12 @@ def get_hulk_grammar() -> Grammar:
 
     type_body <= (
         ~type_body + attribute_definition | ~type_body + function_definition,
-        lambda h, s: s[1] + [s[2]],
-        lambda h, s: [s[2]],
-        lambda h, s: s[1] + [s[2]],
-        lambda h, s: [s[1]],
+        (
+            lambda h, s: s[1] + [s[2]],
+            lambda h, s: [s[2]],
+            lambda h, s: s[1] + [s[2]],
+            lambda h, s: [s[1]],
+        ),
     )
 
     attribute_definition <= identifier + ~type_declaration + assignment_terminal + expression + semicolon, (

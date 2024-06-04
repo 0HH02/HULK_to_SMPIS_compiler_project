@@ -11,8 +11,8 @@ class Type:
     def __init__(self, name: str) -> None:
         self.name = name
         self.parent = None
-        self.params: dict[str, Variable] = {}
-        self.attributes: dict[str, Variable] = {}
+        self.params: dict[str, Identifier] = {}
+        self.attributes: dict[str, Identifier] = {}
         self.methods: dict[str, Method] = {}
 
     def __eq__(self, value: object) -> bool:
@@ -169,14 +169,24 @@ class RangeType(Type):
             "next": Method("next", [], NumberType()),
         }
         self.attributes = {
-            "min": Variable("min", NumberType()),
-            "max": Variable("max", NumberType()),
+            "min": Identifier("min", NumberType()),
+            "max": Identifier("max", NumberType()),
         }
 
         self.params = {
-            "min": Variable("min", NumberType()),
-            "max": Variable("max", NumberType()),
+            "min": Identifier("min", NumberType()),
+            "max": Identifier("max", NumberType()),
         }
+
+
+class UnkownType(Type):
+    """
+    Represents an unknown type in the semantic analyzer.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("Uknown")
+        self.parent = ObjectType()
 
 
 class Method:
@@ -191,8 +201,9 @@ class Method:
 
     def __init__(self, name: str, params, return_type) -> None:
         self.name: str = name
-        self.params: list[Variable] = params
+        self.params: list[Identifier] = params
         self.return_type: Type = return_type
+        self.line = -1
 
     def __eq__(self, value: object) -> bool:
         return (
@@ -214,9 +225,9 @@ class Method:
         return self.__str__()
 
 
-class Variable:
+class Identifier:
     """
-    Represents a variable in a class.
+    Represents a param or an atributte in a class.
 
     Attributes:
         name (str): The name of the variable.
@@ -229,7 +240,7 @@ class Variable:
 
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, Variable)
+            isinstance(value, Identifier)
             and self.name == value.name
             and self.type == value.type
         )
@@ -239,13 +250,3 @@ class Variable:
 
     def __repr__(self) -> str:
         return self.__str__()
-
-
-class UnkownType(Type):
-    """
-    Represents an unknown type in the semantic analyzer.
-    """
-
-    def __init__(self) -> None:
-        super().__init__("Uknown")
-        self.parent = ObjectType()
