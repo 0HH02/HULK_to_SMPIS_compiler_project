@@ -3,7 +3,7 @@
 """
 
 from multipledispatch import dispatch
-from .types import BooleanType, RangeType, UnkownType, NumberType
+from .types import BooleanType, RangeType, UnkownType, NumberType, StringType
 from .context import Context
 from ..parser.ast.ast import (
     Operator,
@@ -13,7 +13,7 @@ from ..parser.ast.ast import (
     For,
     Elif,
     Call,
-    Variable,
+    Identifier,
     NegativeNode,
     PositiveNode,
     NotNode,
@@ -94,14 +94,28 @@ class TypeCheckVisitor(IVisitor):
             print("Can not infer type of expression")
             return False
 
-        if not expresion_type.get_method(node.identifier):
+        method = expresion_type.get_method(node.identifier)
+        if method is None:
             print(f"Method {node.identifier} is not defined in {expresion_type.name}")
             return False
 
+        if len(node.arguments) != len(method.params):
+            print(
+                f"Method {node.identifier} expects {len(method.params)} arguments, but {len(node.arguments)} were given"
+            )
+            return False
+
+        for i, arg in enumerate(node.arguments):
+            if not arg.inferred_type is method.params[i]:
+                print(
+                    f"Can not implicitly convert from {arg.inferred_type.name} to {method.params[i].name}"
+                )
+                return False
+
         return True
 
-    @dispatch(Variable)
-    def visit_node(self, node: Variable, context) -> bool:
+    @dispatch(Identifier)
+    def visit_node(self, node: Identifier, context) -> bool:
 
         if not context.check_var(node.identifier):
             print(f"Variable {node.identifier} is not defined")
@@ -111,18 +125,18 @@ class TypeCheckVisitor(IVisitor):
 
     @dispatch(NegativeNode)
     def visit_node(self, node: NegativeNode, context) -> bool:
-        return node.expression.inferred_type is NumberType()
+        return node.expression.inferred_type is NumberType
 
     @dispatch(PositiveNode)
     def visit_node(self, node: NegativeNode, context) -> bool:
-        return node.expression.inferred_type is NumberType()
+        return node.expression.inferred_type is NumberType
 
     @dispatch(NotNode)
     def visit_node(self, node: NotNode, context) -> bool:
-        return node.expression.inferred_type is BooleanType()
+        return node.expression.inferred_type is BooleanType
 
     @dispatch(BinaryExpression)
-    def visit_node(self, node: BinaryExpression, context) -> bool:
+    def visit_node(self, node: BinaryExpression, context: Context) -> bool:
         if node.operator in [
             Operator.ADD,
             Operator.SUB,
@@ -132,14 +146,14 @@ class TypeCheckVisitor(IVisitor):
             Operator.POW,
         ]:
             return (
-                node.left.inferred_type is NumberType()
-                and node.right.inferred_type is NumberType()
+                node.left.inferred_type is NumberType
+                and node.right.inferred_type is NumberType
             )
 
         if node.operator in [Operator.AND, Operator.OR]:
             return (
-                node.left.inferred_type is BooleanType()
-                and node.right.inferred_type is BooleanType()
+                node.left.inferred_type is BooleanType
+                and node.right.inferred_type is BooleanType
             )
 
         if node.operator in [
@@ -151,3 +165,33 @@ class TypeCheckVisitor(IVisitor):
             Operator.LE,
         ]:
             return node.left.inferred_type == node.right.inferred_type
+
+        if node.operator is Operator.IS:
+            if node.right is Identifier:
+                if not context.check_type(node.right.identifier):
+                    print(f"Type {node.right.identifier} is not defined")
+                    return False
+                return node.left.inferred_type is node.right.inferred_type
+
+            print("Invalid Expression")
+            return False
+
+        if node.operator is Operator.AS:
+            if node.right is Identifier:
+                if not context.check_type(node.right.identifier):
+                    print(f"Type {node.right.identifier} is not defined")
+                    return False
+
+                return node.right.inferred_type.conforms_to(node.left.inferred_type)
+
+            print("Invalid Expression")
+            return False
+
+        if node.operator in [Operator.CONCAT, Operator.DCONCAT]:
+            return (
+                node.left.inferred_type is NumberType
+                or node.left.inferred_type is StringType
+            ) and (
+                node.right.inferred_type is NumberType
+                or node.right.inferred_type is StringType
+            )

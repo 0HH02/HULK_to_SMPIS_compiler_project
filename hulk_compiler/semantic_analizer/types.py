@@ -10,7 +10,7 @@ class Type:
 
     def __init__(self, name: str) -> None:
         self.name = name
-        self.parent = None
+        self.parent: Type = None
         self.params: dict[str, Identifier] = {}
         self.attributes: dict[str, Identifier] = {}
         self.methods: dict[str, Method] = {}
@@ -18,7 +18,7 @@ class Type:
     def __eq__(self, value: object) -> bool:
         return isinstance(value, type(self)) and self.name == value.name
 
-    def get_attribute(self, name: str) -> bool:
+    def get_attribute(self, name: str) -> "Identifier" | None:
         """
         Retrieves the attribute with the given name.
 
@@ -29,14 +29,14 @@ class Type:
             The attribute with the given name.
         """
         if name in self.attributes:
-            return True
+            return self.attributes[name]
 
         if self.parent is not None:
             return self.parent.get_attribute(name)
 
-        return False
+        return None
 
-    def get_method(self, name: str):
+    def get_method(self, name: str) -> "Method" | None:
         """
         Retrieves the method with the given name.
 
@@ -47,12 +47,12 @@ class Type:
             The method with the given name.
         """
         if name in self.methods:
-            return True
+            return self.methods[name]
 
         if self.parent is not None:
             return self.parent.get_method(name)
 
-        return False
+        return None
 
     def conforms_to(self, other) -> bool:
         """

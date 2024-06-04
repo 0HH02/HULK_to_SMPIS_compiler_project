@@ -162,7 +162,7 @@ class VariableDeclaration(Expression):
 
 
 @dataclass
-class Variable(Expression):
+class Identifier(Expression):
     """
     Represents a variable node in the AST.
     """

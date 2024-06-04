@@ -23,7 +23,7 @@ from hulk_compiler.parser.ast.ast import (
     NegativeNode,
     LiteralNode,
     Operator,
-    Variable,
+    Identifier,
 )
 
 from hulk_compiler.lexer.token import Token, TokenType
@@ -75,8 +75,8 @@ AST2 = Program(
                     ),
                     BinaryExpression(
                         Operator.CONCAT,
-                        Variable(Token("text", TokenType.IDENTIFIER, 2, 18)),
-                        Variable(Token("number", TokenType.IDENTIFIER, 2, 25)),
+                        Identifier(Token("text", TokenType.IDENTIFIER, 2, 18)),
+                        Identifier(Token("number", TokenType.IDENTIFIER, 2, 25)),
                     ),
                 ),
             ),
