@@ -153,6 +153,7 @@ class NonTerminal(Symbol):
             TypeError: If the `other` argument is not an instance of `Symbol`,`Sentence` or
             `SentenceList`.
         """
+
         if isinstance(other, tuple):
             assert len(other) == 2
             body, attributation = other

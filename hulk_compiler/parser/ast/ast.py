@@ -1,7 +1,12 @@
+"""
+This module contains the AST nodes for the Hulk programming language.
+"""
+
 from dataclasses import dataclass
-from abc import ABC
 from enum import Enum
 from hulk_compiler.lexer.token import Token
+from ...semantic_analizer.types import Type, UnkownType
+from ...core.i_visitor import IVisitor
 
 
 class Operator(Enum):
@@ -29,15 +34,29 @@ class Operator(Enum):
     AS = 17
 
 
-@dataclass
-class Node(ABC):
+class ASTNode:
     """
-    Abstract base class for all AST nodes.
+    Base class for all AST nodes.
     """
+
+    def validate(self, visitor: IVisitor, context):
+        """
+        Validates the current node by invoking the corresponding
+        visit method on the provided visitor.
+
+        Args:
+            visitor (IVisitor): The visitor object used to perform the validation.
+            context: Additional context information that can be passed to the visitor.
+
+        Returns:
+            The result of the visit method called on the visitor.
+
+        """
+        return visitor.visit_node(self, context)
 
 
 @dataclass
-class Program(Node):
+class Program(ASTNode):
     """
     Represents a program node in the AST.
     """
@@ -47,7 +66,7 @@ class Program(Node):
 
 
 @dataclass
-class DefineStatement(Node):
+class DefineStatement(ASTNode):
     """
     Represents a define statement node in the AST.
     """
@@ -67,7 +86,7 @@ class TypeDeclaration(DefineStatement):
 
 
 @dataclass
-class Inherits(Node):
+class Inherits(ASTNode):
     """
     Represents an inherits node in the AST.
     """
@@ -77,13 +96,15 @@ class Inherits(Node):
 
 
 @dataclass
-class AttributeDeclaration(Node):
+class AttributeDeclaration(ASTNode):
     """
     Represents an attribute declaration node in the AST.
     """
 
     identifier: str
     expression: "Expression"
+    type: any = None
+
     type: any = None
 
 
@@ -100,7 +121,7 @@ class FunctionDeclaration(DefineStatement):
 
 
 @dataclass
-class Parameter(Node):
+class Parameter(ASTNode):
     """
     Represents a parameter node in the AST.
     """
@@ -120,11 +141,13 @@ class ProtocolDeclaration(DefineStatement):
     functions: list[FunctionDeclaration]
 
 
-@dataclass
-class Expression(Node, ABC):
+class Expression(ASTNode):
     """
     Represents an expression node in the AST.
     """
+
+    def __init__(self) -> None:
+        self.inferred_type: Type = UnkownType()
 
 
 @dataclass
@@ -197,7 +220,7 @@ class For(Expression):
     """
 
     index_identifier: str
-    indexIdentifierTyppe: str
+    index_identifier_type: str
     iterable: Expression
     body: Expression
 
@@ -264,7 +287,7 @@ class IndexNode(Expression):
 
 
 @dataclass
-class BinaryExpression(Node):
+class BinaryExpression(Expression):
     """
     Represents a binary expression node in the AST.
     """
@@ -286,7 +309,7 @@ class NotNode(Expression):
 @dataclass
 class PositiveNode(Expression):
     """
-    Represents a not node in the AST.
+    Represents a positive node in the AST.
     """
 
     expression: Expression
