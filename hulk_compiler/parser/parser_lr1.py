@@ -54,7 +54,8 @@ class ParserLR1:
         ### Returns:
             AST: The generated Abstract Syntax Tree (AST).
         """
-        token_stack: deque[Token] = deque()
+        tokens = [self._mapping[token.token_type] for token in tokens]
+        token_stack: deque[(Symbol, any)] = deque()
         state_stack: deque[int] = deque()
         state_stack.append(0)
         derivations: list[tuple] = []
@@ -62,21 +63,26 @@ class ParserLR1:
         while True:
             state = state_stack[-1]
             token = tokens[i]
-            action: ParsingAction = self._action_table[state][
-                self._mapping[token.token_type]
-            ]
+            action: ParsingAction = self._action_table[state][token]
             if isinstance(action, Shift):
-                token_stack.append(token)
+                token_stack.append((token, None))
                 state_stack.append(action.next_state)
                 i += 1
             elif isinstance(action, Reduce):
                 derivations.append((action.head, action.body))
+                body_token_values = [
+                    token_stack.pop()[1] for _ in range(len(action.body))
+                ]
+                print(action.body)
+                print(action.body.attributation)
+                value = action.body.attributation(body_token_values)
+
                 for _ in range(len(action.body)):
-                    token_stack.pop()
                     state_stack.pop()
-                state = state_stack[-1]
-                token_stack.append(action.head)
-                go_to = self._action_table[state][action.head]
+                token_stack.append((action.head, value))
+
+                state: int = state_stack[-1]
+                go_to: ParsingAction = self._action_table[state][action.head]
                 if isinstance(go_to, GoTo):
                     state_stack.append(go_to.next_state)
             elif isinstance(action, Accept):

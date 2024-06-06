@@ -159,6 +159,7 @@ class NonTerminal(Symbol):
             body, attributation = other
 
         else:
+            print(other)
             body = other
             attributation = None
 
