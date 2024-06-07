@@ -105,8 +105,6 @@ class AttributeDeclaration(ASTNode):
     expression: "Expression"
     type: any = None
 
-    type: any = None
-
 
 @dataclass
 class FunctionDeclaration(DefineStatement):
@@ -114,8 +112,8 @@ class FunctionDeclaration(DefineStatement):
     Represents a function declaration node in the AST.
     """
 
-    identifier: Token
-    params: list[list["Parameter"]]
+    identifier: str
+    params: list["Parameter"]
     body: any
     return_type: any = None
 

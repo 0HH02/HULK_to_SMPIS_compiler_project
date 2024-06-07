@@ -27,6 +27,8 @@ from hulk_compiler.parser.ast.ast import (
 )
 
 from hulk_compiler.lexer.token import Token, TokenType
+from hulk_compiler.semantic_analizer.types import Type
+
 
 AST1_PROGRAM = "let x = 8 in 2;"
 AST1 = Program(
@@ -82,4 +84,45 @@ AST2 = Program(
             ),
         )
     ],
+)
+
+AST3 = Program(
+    [
+        TypeDeclaration(
+            "Carro",
+            [],
+            None,
+            [
+                AttributeDeclaration(
+                    "ruedas", LiteralNode(Token("4", TokenType.NUMBER, 0, 0))
+                ),
+                AttributeDeclaration(
+                    "color", LiteralNode(Token("rojo", TokenType.STRING, 0, 0))
+                ),
+            ],
+            [],
+        ),
+        TypeDeclaration(
+            "Persona",
+            [],
+            None,
+            [
+                AttributeDeclaration(
+                    "fuerza", LiteralNode(Token("5", TokenType.NUMBER, 0, 0))
+                ),
+                AttributeDeclaration(
+                    "ojos", LiteralNode(Token("café", TokenType.STRING, 0, 0))
+                ),
+            ],
+            [
+                FunctionDeclaration(
+                    "suma",
+                    [Parameter("a", None), Parameter("b", None)],
+                    None,
+                    Type("Sumando"),
+                )
+            ],
+        ),
+    ],
+    [],
 )

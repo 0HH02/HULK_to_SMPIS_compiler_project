@@ -62,6 +62,7 @@ class Context:
         if self.check_type(name):
             raise RedefineException("Type", name)
         self.types[name] = Type(name)
+        return self.types[name]
 
     def define_var(self, name: str) -> None:
         """

@@ -3,7 +3,15 @@
 """
 
 from multipledispatch import dispatch
-from .types import BooleanType, RangeType, UnkownType, NumberType
+from dataclasses import dataclass
+from hulk_compiler.semantic_analizer.types import (
+    BooleanType,
+    RangeType,
+    UnkownType,
+    NumberType,
+    Identifier,
+    Method,
+)
 from .context import Context
 from ..parser.ast.ast import (
     Operator,
@@ -18,10 +26,60 @@ from ..parser.ast.ast import (
     PositiveNode,
     NotNode,
     BinaryExpression,
+    Program,
+    TypeDeclaration,
+    FunctionDeclaration,
+    AttributeDeclaration,
 )
 from ..core.i_visitor import IVisitor
+from .types import Type
 
 # pylint: disable=function-redefined
+
+
+@dataclass
+class TypeCollector:
+    context: Context
+
+    @dispatch(Program)
+    def visit(self, node: Program, current_type: Type = None):
+        for class_def in node.defines:
+            if isinstance(class_def, TypeDeclaration):
+                self.visit(class_def)
+
+    @dispatch(TypeDeclaration)
+    def visit(self, node: TypeDeclaration, current_type: Type = None):
+        current_type = self.context.define_type(node.identifier)
+        for attr_def in node.attributes:
+            current_type.attributes[attr_def.identifier] = Identifier(
+                attr_def.identifier, None
+            )
+        for func_def in node.functions:
+            params: list[Identifier] = []
+            for param in func_def.params:
+                params.append(Identifier(param.identifier, param.type))
+            current_type.methods[func_def.identifier] = Method(
+                func_def.identifier, params, func_def.return_type
+            )
+
+
+class TypeBuilder(IVisitor):
+    context: Context
+    current_type: Type
+
+    @dispatch
+    def visit(self, node: TypeDeclaration):
+        self.currentType = self.context.get_type(node.identifier)
+
+    @dispatch
+    def visit(self, node: FunctionDeclaration):
+        return_type = self.context.get_type(node.return_type)
+
+        arg_types = [self.context.get_type(t) for t in node.arg_types]
+
+        self.current_type.defone_method(
+            node.name, return_type, node.arg_names, arg_types
+        )
 
 
 class TypeCheckVisitor(IVisitor):
