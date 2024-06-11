@@ -36,7 +36,7 @@ from ...lexer.token import TokenType
 # pylint: disable=pointless-statement
 
 
-def get_hulk_grammar() -> Grammar:
+def get_hulk_grammar() -> tuple[Grammar, dict]:
     """
     Returns the grammar for the HULK programming language.
 

@@ -3,7 +3,16 @@
 """
 
 from multipledispatch import dispatch
-from .types import BooleanType, RangeType, UnkownType, NumberType, StringType
+from ..lexer.token import TokenType
+from .types import (
+    BooleanType,
+    RangeType,
+    UnkownType,
+    NumberType,
+    StringType,
+    IdentifierVar,
+)
+from .semantic_exceptions import InvalidDeclarationException, InferTypeException
 from .context import Context
 from ..parser.ast.ast import (
     Operator,
@@ -18,6 +27,8 @@ from ..parser.ast.ast import (
     PositiveNode,
     NotNode,
     BinaryExpression,
+    LiteralNode,
+    VariableDeclaration,
 )
 from ..core.i_visitor import IVisitor
 
@@ -30,73 +41,100 @@ class TypeCheckVisitor(IVisitor):
     It provides methods to visit different nodes in the AST.
     """
 
-    @dispatch(While)
-    def visit_node(self, node: While, context) -> bool:
+    @staticmethod
+    @dispatch(LiteralNode)
+    def visit_node(node: LiteralNode, context: Context) -> bool:
 
-        if not node.condition.inferred_type is BooleanType:
+        if node.token.token_type == TokenType.NUMBER_LITERAL:
+            node.inferred_type = NumberType()
+        elif node.token.token_type == TokenType.STRING_LITERAL:
+            node.inferred_type = StringType()
+        else:
+            node.inferred_type = BooleanType()
+
+        return True
+
+    @staticmethod
+    @dispatch(NegativeNode | PositiveNode)
+    def visit_node(node: NegativeNode, context: Context) -> bool:
+        TypeCheckVisitor.visit_node(node.expression, context)
+        return node.expression.inferred_type is NumberType
+
+    @staticmethod
+    @dispatch(NotNode)
+    def visit_node(node: NotNode, context: Context) -> bool:
+        TypeCheckVisitor.visit_node(node.expression, context)
+        return node.expression.inferred_type is BooleanType
+
+    @staticmethod
+    @dispatch(While | Elif)
+    def visit_node(node: While, context: Context) -> bool:
+
+        TypeCheckVisitor.visit_node(node.condition, context)
+        if node.condition.inferred_type is not BooleanType:
             print(
                 f"Can not implicitly convert from {node.condition.inferred_type.name} to boolean"
             )
             return False
 
-        return node.body.validate(self, context)
+        return TypeCheckVisitor.visit_node(node.body, context)
 
+    @staticmethod
     @dispatch(If)
-    def visit_node(self, node: If, context) -> bool:
+    def visit_node(node: If, context: Context) -> bool:
 
-        if not node.condition.inferred_type is BooleanType:
+        TypeCheckVisitor.visit_node(node.condition, context)
+
+        if node.condition.inferred_type is not BooleanType:
             print(
                 f"Can not implicitly convert from {node.condition.inferred_type.name} to boolean"
             )
             return False
 
-        if not node.body.validate(self, context):
+        valid_body: bool = TypeCheckVisitor.visit_node(node.body, context)
+
+        if not valid_body:
             return False
 
         for elif_clause in node.elif_clauses:
-            elif_valid = elif_clause.condition.validate(self, context)
+            elif_valid = TypeCheckVisitor.visit_node(elif_clause, context)
             if not elif_valid:
                 return False
 
-        return node.else_body.validate(self, context)
+        return TypeCheckVisitor.visit_node(node.else_body, context)
 
-    @dispatch(Elif)
-    def visit_node(self, node: Elif, context) -> bool:
-
-        if not node.condition.inferred_type is BooleanType:
-            print(
-                f"Can not implicitly convert from {node.condition.inferred_type.name} to boolean"
-            )
-            return False
-
-        return node.body.validate(self, context)
-
+    @staticmethod
     @dispatch(For)
-    def visit_node(self, node: For, context: Context) -> bool:
+    def visit_node(node: For, context: Context) -> bool:
 
-        if not node.iterable.inferred_type is RangeType:
+        TypeCheckVisitor.visit_node(node.iterable, context)
+
+        if node.iterable.inferred_type is not RangeType:
             print(
                 f"Can not implicitly convert from {node.iterable.inferred_type.name} to iterable"
             )
             return False
 
-        return node.body.validate(self, context.create_child_context())
+        new_context = context.create_child_context()
+        new_context.define_variable(IdentifierVar(node.index_identifier, NumberType()))
 
-    @dispatch(LetVar)
-    def visit_node(self, node: LetVar, context) -> bool:
-        pass
+        return TypeCheckVisitor.visit_node(node.body, new_context)
 
+    @staticmethod
     @dispatch(Call)
-    def visit_node(self, node: Call, context) -> bool:
-        expresion_type = node.obj.inferred_type
+    def visit_node(node: Call, context: Context) -> bool:
 
-        if expresion_type is UnkownType:
+        TypeCheckVisitor.visit_node(node.obj, context)
+
+        object_type = node.obj.inferred_type
+
+        if object_type is UnkownType:
             print("Can not infer type of expression")
             return False
 
-        method = expresion_type.get_method(node.identifier)
+        method = object_type.get_method(node.identifier)
         if method is None:
-            print(f"Method {node.identifier} is not defined in {expresion_type.name}")
+            print(f"Method {node.identifier} is not defined in {object_type.name}")
             return False
 
         if len(node.arguments) != len(method.params):
@@ -106,7 +144,7 @@ class TypeCheckVisitor(IVisitor):
             return False
 
         for i, arg in enumerate(node.arguments):
-            if not arg.inferred_type is method.params[i]:
+            if arg.inferred_type is not method.params[i]:
                 print(
                     f"Can not implicitly convert from {arg.inferred_type.name} to {method.params[i].name}"
                 )
@@ -114,29 +152,61 @@ class TypeCheckVisitor(IVisitor):
 
         return True
 
+    @staticmethod
     @dispatch(Identifier)
-    def visit_node(self, node: Identifier, context) -> bool:
+    def visit_node(node: Identifier, context: Context) -> bool:
 
         if not context.check_var(node.identifier):
             print(f"Variable {node.identifier} is not defined")
             return False
 
+        node.inferred_type = context.get_var_type(node.identifier)
+
         return True
 
-    @dispatch(NegativeNode)
-    def visit_node(self, node: NegativeNode, context) -> bool:
-        return node.expression.inferred_type is NumberType
+    @staticmethod
+    @dispatch(LetVar)
+    def visit_node(node: LetVar, context: Context) -> bool:
+        new_context = context.create_child_context()
+        for var_declaration in node.declarations:
+            valid_declaration: bool = TypeCheckVisitor.visit_node(
+                var_declaration, context
+            )
+            if not valid_declaration:
+                raise InvalidDeclarationException(var_declaration.identifier)
 
-    @dispatch(PositiveNode)
-    def visit_node(self, node: NegativeNode, context) -> bool:
-        return node.expression.inferred_type is NumberType
+            new_context.define_variable(
+                IdentifierVar(var_declaration.identifier, var_declaration.type)
+            )
 
-    @dispatch(NotNode)
-    def visit_node(self, node: NotNode, context) -> bool:
-        return node.expression.inferred_type is BooleanType
+        TypeCheckVisitor.visit_node(node.body, new_context)
 
+    @staticmethod
+    @dispatch(VariableDeclaration)
+    def visit_node(node: VariableDeclaration, context: Context) -> bool:
+        TypeCheckVisitor.visit_node(node.expression, context)
+
+        if node.type is not None:
+            if not context.check_type(node.type):
+                raise InvalidDeclarationException(node.type)
+
+            if not node.expression.inferred_type.conforms_to(node.type):
+                print(
+                    f"Can not implicitly convert from {node.expression.inferred_type.name} to {node.type}"
+                )
+                return False
+
+            return True
+
+        if node.expression.inferred_type is UnkownType:
+            raise InferTypeException()
+
+        node.type = node.expression.inferred_type
+        return True
+
+    @staticmethod
     @dispatch(BinaryExpression)
-    def visit_node(self, node: BinaryExpression, context: Context) -> bool:
+    def visit_node(node: BinaryExpression, context: Context) -> bool:
         if node.operator in [
             Operator.ADD,
             Operator.SUB,
@@ -145,18 +215,12 @@ class TypeCheckVisitor(IVisitor):
             Operator.MOD,
             Operator.POW,
         ]:
-            return (
-                node.left.inferred_type is NumberType
-                and node.right.inferred_type is NumberType
-            )
+            return TypeCheckVisitor._visit_binary_aritmethic(node, context)
 
-        if node.operator in [Operator.AND, Operator.OR]:
-            return (
-                node.left.inferred_type is BooleanType
-                and node.right.inferred_type is BooleanType
-            )
+        elif node.operator in [Operator.AND, Operator.OR]:
+            return TypeCheckVisitor._visit_binary_logic(node, context)
 
-        if node.operator in [
+        elif node.operator in [
             Operator.EQ,
             Operator.NEQ,
             Operator.GT,
@@ -164,34 +228,120 @@ class TypeCheckVisitor(IVisitor):
             Operator.GE,
             Operator.LE,
         ]:
-            return node.left.inferred_type == node.right.inferred_type
+            return TypeCheckVisitor._visit_binary_comparison(node, context)
 
-        if node.operator is Operator.IS:
-            if node.right is Identifier:
-                if not context.check_type(node.right.identifier):
-                    print(f"Type {node.right.identifier} is not defined")
-                    return False
-                return node.left.inferred_type is node.right.inferred_type
+        elif node.operator is Operator.IS:
+            return TypeCheckVisitor._visit_binary_type_checker(node, context)
 
-            print("Invalid Expression")
-            return False
+        elif node.operator is Operator.AS:
+            return TypeCheckVisitor._visit_binary_downcast(node, context)
 
-        if node.operator is Operator.AS:
-            if node.right is Identifier:
-                if not context.check_type(node.right.identifier):
-                    print(f"Type {node.right.identifier} is not defined")
-                    return False
+        elif node.operator in [Operator.CONCAT, Operator.DCONCAT]:
+            return TypeCheckVisitor._visit_binary_concat(node, context)
 
-                return node.right.inferred_type.conforms_to(node.left.inferred_type)
+        return False
 
-            print("Invalid Expression")
-            return False
+    @staticmethod
+    def _visit_binary_aritmethic(node: BinaryExpression, context: Context) -> bool:
 
-        if node.operator in [Operator.CONCAT, Operator.DCONCAT]:
-            return (
-                node.left.inferred_type is NumberType
-                or node.left.inferred_type is StringType
-            ) and (
-                node.right.inferred_type is NumberType
-                or node.right.inferred_type is StringType
+        TypeCheckVisitor.visit_node(node.left, context)
+        TypeCheckVisitor.visit_node(node.right, context)
+
+        if node.left.inferred_type is not NumberType:
+            print(
+                f"Can not implicitly convert from {node.left.inferred_type.name} to number"
             )
+            return False
+
+        if node.right.inferred_type is not NumberType:
+            print(
+                f"Can not implicitly convert from {node.right.inferred_type.name} to number"
+            )
+            return False
+
+        return True
+
+    @staticmethod
+    def _visit_binary_logic(node: BinaryExpression, context: Context) -> bool:
+
+        TypeCheckVisitor.visit_node(node.left, context)
+        TypeCheckVisitor.visit_node(node.right, context)
+
+        if node.left.inferred_type is not BooleanType:
+            print(
+                f"Can not implicitly convert from {node.left.inferred_type.name} to boolean"
+            )
+            return False
+
+        if node.right.inferred_type is not BooleanType:
+            print(
+                f"Can not implicitly convert from {node.right.inferred_type.name} to boolean"
+            )
+            return False
+
+        return True
+
+    @staticmethod
+    def _visit_binary_comparison(node: BinaryExpression, context: Context) -> bool:
+
+        TypeCheckVisitor.visit_node(node.left, context)
+        TypeCheckVisitor.visit_node(node.right, context)
+
+        if node.left.inferred_type != node.right.inferred_type:
+            print(
+                f"Can not compare {node.left.inferred_type.name} with {node.right.inferred_type.name}"
+            )
+            return False
+
+        return True
+
+    @staticmethod
+    def _visit_binary_downcast(node: BinaryExpression, context: Context) -> bool:
+
+        TypeCheckVisitor.visit_node(node.left, context)
+        TypeCheckVisitor.visit_node(node.right, context)
+
+        if node.right is Identifier:
+            if not context.check_type(node.right.identifier):
+                print(f"Type {node.right.identifier} is not defined")
+                return False
+
+            return node.right.inferred_type.conforms_to(node.left.inferred_type)
+
+        print("Invalid Expression")
+        return False
+
+    @staticmethod
+    def _visit_binary_type_checker(node: BinaryExpression, context: Context) -> bool:
+
+        TypeCheckVisitor.visit_node(node.left, context)
+        TypeCheckVisitor.visit_node(node.right, context)
+
+        if node.right is Identifier:
+            if not context.check_type(node.right.identifier):
+                print(f"Type {node.right.identifier} is not defined")
+                return False
+
+            return node.left.inferred_type is node.right.inferred_type
+
+        print("Invalid Expression")
+        return False
+
+    @staticmethod
+    def _visit_binary_concat(node: BinaryExpression, context: Context):
+        TypeCheckVisitor.visit_node(node.left, context)
+        TypeCheckVisitor.visit_node(node.right, context)
+
+        if (
+            node.left.inferred_type is not NumberType
+            and node.left.inferred_type is not StringType
+        ) or (
+            node.right.inferred_type is not NumberType
+            and node.right.inferred_type is not StringType
+        ):
+            print(
+                f"Can not implicitly convert from {node.left.inferred_type.name} to string"
+            )
+            return False
+
+        return True

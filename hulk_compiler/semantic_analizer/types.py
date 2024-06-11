@@ -10,15 +10,15 @@ class Type:
 
     def __init__(self, name: str) -> None:
         self.name = name
-        self.parent: Type = None
-        self.params: dict[str, Identifier] = {}
-        self.attributes: dict[str, Identifier] = {}
+        self.parent: Type | None = None
+        self.params: dict[str, IdentifierVar] = {}
+        self.attributes: dict[str, IdentifierVar] = {}
         self.methods: dict[str, Method] = {}
 
     def __eq__(self, value: object) -> bool:
         return isinstance(value, type(self)) and self.name == value.name
 
-    def get_attribute(self, name: str) -> "Identifier" | None:
+    def get_attribute(self, name: str) -> "IdentifierVar" | None:
         """
         Retrieves the attribute with the given name.
 
@@ -169,13 +169,13 @@ class RangeType(Type):
             "next": Method("next", [], NumberType()),
         }
         self.attributes = {
-            "min": Identifier("min", NumberType()),
-            "max": Identifier("max", NumberType()),
+            "min": IdentifierVar("min", NumberType()),
+            "max": IdentifierVar("max", NumberType()),
         }
 
         self.params = {
-            "min": Identifier("min", NumberType()),
-            "max": Identifier("max", NumberType()),
+            "min": IdentifierVar("min", NumberType()),
+            "max": IdentifierVar("max", NumberType()),
         }
 
 
@@ -201,7 +201,7 @@ class Method:
 
     def __init__(self, name: str, params, return_type) -> None:
         self.name: str = name
-        self.params: list[Identifier] = params
+        self.params: list[IdentifierVar] = params
         self.return_type: Type = return_type
         self.line = -1
 
@@ -225,7 +225,7 @@ class Method:
         return self.__str__()
 
 
-class Identifier:
+class IdentifierVar:
     """
     Represents a param or an atributte in a class.
 
@@ -240,7 +240,7 @@ class Identifier:
 
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, Identifier)
+            isinstance(value, IdentifierVar)
             and self.name == value.name
             and self.type == value.type
         )

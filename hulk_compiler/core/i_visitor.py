@@ -10,8 +10,9 @@ class IVisitor(ABC):
     Interface for visitor classes that implement the visitor pattern.
     """
 
+    @staticmethod
     @abstractmethod
-    def visit_node(self, node, context) -> bool:
+    def visit_node(node, context) -> bool:
         """
         Abstract method for visiting a node in the AST.
 

@@ -25,7 +25,7 @@ class Grammar:
     def __init__(self):
         eof = Symbol("$", self)
         self.eof = eof
-        self.seed: NonTerminal = None
+        self.seed: NonTerminal | None = None
         self.terminals: list[Symbol] = [eof]
         self.non_terminals: list[NonTerminal] = []
         self.productions: dict[NonTerminal, SentenceList] = {}
@@ -64,7 +64,7 @@ class Grammar:
         Parameters:
         - seed: The NonTerminal distinguished to set for the grammar.
         """
-        if not self.seed is None and not seed in self.non_terminals:
+        if self.seed is not None and seed not in self.non_terminals:
             self.non_terminals.append(seed)
         self.seed = seed
 
@@ -164,7 +164,7 @@ class NonTerminal(Symbol):
 
         if isinstance(body, Symbol):
             if callable(attributation):
-                if not self in self.grammar.productions:
+                if self not in self.grammar.productions:
                     self.grammar.productions[self] = SentenceList(
                         [Sentence([body], attributation)]
                     )
@@ -177,7 +177,7 @@ class NonTerminal(Symbol):
             if callable(attributation):
                 body.attributation = attributation
 
-            if not self in self.grammar.productions:
+            if self not in self.grammar.productions:
                 self.grammar.productions[self] = SentenceList([body])
             else:
                 self.grammar.productions[self].append(body)
@@ -198,7 +198,7 @@ class NonTerminal(Symbol):
                     for sentence in body:
                         sentence.attributation = attributation
 
-            if not self in self.grammar.productions:
+            if self not in self.grammar.productions:
                 self.grammar.productions[self] = body
 
             else:
