@@ -63,7 +63,7 @@ class Program(ASTNode):
     """
 
     defines: list["DefineStatement"]
-    statements: list["Expression"]
+    statement: "Expression"
 
 
 @dataclass
@@ -170,16 +170,6 @@ class Identifier(Expression):
 
 
 @dataclass
-class DestructiveAssign(Expression):
-    """
-    Represents a destructive assignment node in the AST.
-    """
-
-    identifier: str
-    expression: Expression
-
-
-@dataclass
 class AttributeCall(Expression):
     """
     Represents a function call node in the AST.
@@ -187,6 +177,16 @@ class AttributeCall(Expression):
 
     obj: Expression
     identifier: str
+
+
+@dataclass
+class DestructiveAssign(Expression):
+    """
+    Represents a destructive assignment node in the AST.
+    """
+
+    identifier: str | AttributeCall
+    expression: Expression
 
 
 @dataclass

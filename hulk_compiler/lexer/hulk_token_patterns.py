@@ -43,7 +43,7 @@ TOKEN_PATTERNS = [
     TokenPattern("inherits", TokenType.INHERITS, "[^a-zA-Z_]"),
     TokenPattern("protocol", TokenType.PROTOCOL, "[^a-zA-Z_]"),
     TokenPattern("extends", TokenType.EXTENDS, "[^a-zA-Z_]"),
-    TokenPattern("(\\^ | \\*\\*)", TokenType.POWER),
+    TokenPattern("(\\^|\\*\\*)", TokenType.POWER),
     TokenPattern("\\+", TokenType.PLUS),
     TokenPattern("\\-", TokenType.MINUS),
     TokenPattern("\\*", TokenType.TIMES, "[^\\*]"),

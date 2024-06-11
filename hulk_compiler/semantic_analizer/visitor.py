@@ -259,8 +259,7 @@ class ASTPrinter:
         print("   " * tabs, "program: {")
         for define in node.defines:
             ASTPrinter.visit_node(define, tabs + 1)
-        for statement in node.statements:
-            ASTPrinter.visit_node(statement, tabs + 1)
+        ASTPrinter.visit_node(node.statement, tabs + 1)
         print("   " * tabs, "}")
 
     @staticmethod
@@ -280,7 +279,7 @@ class ASTPrinter:
         for elif_expr in node.elif_clauses:
             ASTPrinter.visit_node(elif_expr, tabs + 1)
         print("   " * (tabs + 1), "else: {")
-        ASTPrinter.visit_node(node.else_body)
+        ASTPrinter.visit_node(node.else_body, tabs + 1)
         print("   " * (tabs + 1), "}")
         print("   " * tabs, "}")
 
@@ -308,6 +307,14 @@ class ASTPrinter:
         for var in node.declarations:
             ASTPrinter.visit_node(var, tabs + 1)
         ASTPrinter.visit_node(node.body, tabs + 1)
+        print("   " * tabs, "}")
+
+    @staticmethod
+    @dispatch(ExpressionBlock, int)
+    def visit_node(node: ExpressionBlock, tabs: int):
+        print("   " * tabs, "expression_block: {")
+        for exp in node.body:
+            ASTPrinter.visit_node(exp, tabs + 1)
         print("   " * tabs, "}")
 
     @staticmethod
@@ -373,7 +380,7 @@ class ASTPrinter:
     @staticmethod
     @dispatch(LiteralNode, int)
     def visit_node(node: LiteralNode, tabs: int):
-        print("   " * tabs, "literal: ", node.lex)
+        print("   " * tabs, "literal: ", node.lex.lex)
 
     @staticmethod
     @dispatch(Inherits, int)
@@ -393,6 +400,7 @@ class ASTPrinter:
             ASTPrinter.visit_node(arg, tabs + 1)
         if node.return_type:
             print("   " * (tabs + 1), "return_type: ", node.return_type)
+        ASTPrinter.visit_node(node.body, tabs + 1)
         print("   " * tabs, "}")
 
     @staticmethod
