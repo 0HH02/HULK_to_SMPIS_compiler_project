@@ -115,7 +115,7 @@ class FunctionDeclaration(DefineStatement):
 
     identifier: str
     params: list["Parameter"]
-    body: any
+    body: "Expression"
     return_type: any = None
 
 
@@ -136,7 +136,7 @@ class ProtocolDeclaration(DefineStatement):
     """
 
     identifier: str
-    extends: list
+    extends: list["Identifier"]
     functions: list[FunctionDeclaration]
 
 
@@ -155,7 +155,7 @@ class VariableDeclaration(Expression):
     Represents a variable declaration node in the AST.
     """
 
-    identifier: Token
+    identifier: str
     expression: Expression
     type: any = None
 
@@ -180,12 +180,27 @@ class DestructiveAssign(Expression):
 
 
 @dataclass
-class Call(Expression):
+class AttributeCall(Expression):
     """
     Represents a function call node in the AST.
     """
 
     obj: Expression
+    identifier: str
+
+
+@dataclass
+class FunctionCall(Expression):
+    """
+    Represents a function call node in the AST.
+    """
+
+    obj: Expression
+    invocation: "Invocation"
+
+
+@dataclass
+class Invocation(Expression):
     identifier: str
     arguments: list["Expression"]
 
@@ -235,7 +250,7 @@ class While(Expression):
 
 
 @dataclass
-class ExpressionBlock:
+class ExpressionBlock(Expression):
     """
     Represents an expression block node in the AST.
     """
@@ -269,7 +284,15 @@ class Vector(Expression):
     Represents a vector node in the AST.
     """
 
-    elements: list
+    elements: list["LiteralNode"]
+
+
+@dataclass
+class ComprehensionVector(Expression):
+    """
+    Represents a vector node in the AST.
+    """
+
     generator: Expression
     item: Token
     iterator: Expression

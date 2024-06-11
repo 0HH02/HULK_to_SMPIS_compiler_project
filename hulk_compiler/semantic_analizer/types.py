@@ -8,6 +8,9 @@ class Type:
     Represents a base class for types in the semantic analyzer.
     """
 
+    def __str__(self):
+        return self.name
+
     def __init__(self, name: str) -> None:
         self.name = name
         self.parent: Type = None

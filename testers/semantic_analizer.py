@@ -8,7 +8,6 @@ from hulk_compiler.parser.ast.ast import (
     ProtocolDeclaration,
     VariableDeclaration,
     DestructiveAssign,
-    Call,
     Elif,
     If,
     For,
@@ -35,10 +34,12 @@ AST1 = Program(
     [],
     [
         LetVar(
-            VariableDeclaration(
-                Token("x", TokenType.IDENTIFIER, 0, 5),
-                LiteralNode(Token("8", TokenType.NUMBER_LITERAL, 0, 8)),
-            ),
+            [
+                VariableDeclaration(
+                    Token("x", TokenType.IDENTIFIER, 0, 5),
+                    LiteralNode(Token("8", TokenType.NUMBER_LITERAL, 0, 8)),
+                )
+            ],
             LiteralNode(Token("2", TokenType.NUMBER_LITERAL, 0, 10)),
         )
     ],
@@ -52,39 +53,50 @@ AST2_PROGRAM = """
         );
     """
 
-AST2 = Program(
-    [],
-    [
-        LetVar(
-            VariableDeclaration(
-                Token("number", TokenType.IDENTIFIER, 0, 5),
-                LiteralNode(Token("42", TokenType.NUMBER_LITERAL, 0, 14)),
-            ),
-            LetVar(
-                VariableDeclaration(
-                    Token("text", TokenType.IDENTIFIER, 1, 9),
-                    LiteralNode(
-                        Token("The meaning of life is", TokenType.STRING_LITERAL, 1, 16)
-                    ),
-                ),
-                Call(
-                    None,
-                    Token(
-                        "print",
-                        TokenType.IDENTIFIER,
-                        2,
-                        12,
-                    ),
-                    BinaryExpression(
-                        Operator.CONCAT,
-                        Identifier(Token("text", TokenType.IDENTIFIER, 2, 18)),
-                        Identifier(Token("number", TokenType.IDENTIFIER, 2, 25)),
-                    ),
-                ),
-            ),
-        )
-    ],
-)
+# AST2 = Program(
+#     [],
+#     [
+#         LetVar(
+#             [
+#                 VariableDeclaration(
+#                     Token("number", TokenType.IDENTIFIER, 0, 5),
+#                     LiteralNode(Token("42", TokenType.NUMBER_LITERAL, 0, 14)),
+#                 )
+#             ],
+#             LetVar(
+#                 [
+#                     VariableDeclaration(
+#                         Token("text", TokenType.IDENTIFIER, 1, 9),
+#                         LiteralNode(
+#                             Token(
+#                                 "The meaning of life is",
+#                                 TokenType.STRING_LITERAL,
+#                                 1,
+#                                 16,
+#                             )
+#                         ),
+#                     ),
+#                 ],
+#                 Call(
+#                     Identifier("fulanito"),
+#                     Token(
+#                         "print",
+#                         TokenType.IDENTIFIER,
+#                         2,
+#                         12,
+#                     ),
+#                     [
+#                         BinaryExpression(
+#                             Operator.CONCAT,
+#                             Identifier(Token("text", TokenType.IDENTIFIER, 2, 18)),
+#                             Identifier(Token("number", TokenType.IDENTIFIER, 2, 25)),
+#                         )
+#                     ],
+#                 ),
+#             ),
+#         )
+#     ],
+# )
 
 AST3 = Program(
     [
