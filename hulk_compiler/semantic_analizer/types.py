@@ -1,5 +1,5 @@
 """
-
+This module contains the types used in the semantic analyzer.
 """
 
 

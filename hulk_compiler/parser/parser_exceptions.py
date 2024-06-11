@@ -43,6 +43,6 @@ class ConflictActionError(ParsingError):
     """
 
     def __init__(self, state: int, char: str, action: ParsingAction, *args):
-        conflict = "Reduce-Reduce" if action is Reduce else "Shift-Reduce"
+        conflict = "Reduce-Reduce" if isinstance(action, Reduce) else "Shift-Reduce"
         print(f"{conflict} conflict at state {state} with symbol {char}")
         super().__init__(*args)

@@ -12,9 +12,6 @@ class ParsingAction(ABC):
     Abstract base class for parsing actions.
     """
 
-    def __init__(self):
-        pass
-
 
 @dataclass
 class Shift(ParsingAction):

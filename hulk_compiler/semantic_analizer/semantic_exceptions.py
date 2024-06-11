@@ -1,5 +1,5 @@
 """
-
+This module contains the exceptions raised by the semantic analyzer.
 """
 
 

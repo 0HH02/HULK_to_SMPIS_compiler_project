@@ -1,4 +1,22 @@
+"""
+
+"""
+
 from multipledispatch import dispatch
+from .semantic_exceptions import (
+    InferTypeException,
+    InvalidDeclarationException,
+)
+from .context import Context
+from .types import (
+    StringType,
+    NumberType,
+    BooleanType,
+    RangeType,
+    IdentifierVar,
+    UnkownType,
+)
+from ..lexer.token import TokenType
 from ..core.i_visitor import IVisitor
 from ..parser.ast.ast import (
     LiteralNode,
@@ -17,23 +35,8 @@ from ..parser.ast.ast import (
     Operator,
 )
 
-from .semantic_exceptions import (
-    InferTypeException,
-    InvalidDeclarationException,
-)
-
-from .context import Context
-from .types import (
-    StringType,
-    NumberType,
-    BooleanType,
-    RangeType,
-    IdentifierVar,
-    UnkownType,
-)
-from ..lexer.token import TokenType
-
 # pylint: disable=function-redefined
+# pylint: disable=line-too-long
 
 
 class TypeCheckVisitor(IVisitor):
@@ -59,20 +62,20 @@ class TypeCheckVisitor(IVisitor):
     @dispatch(NegativeNode | PositiveNode)
     def visit_node(node: NegativeNode, context: Context) -> bool:
         TypeCheckVisitor.visit_node(node.expression, context)
-        return node.expression.inferred_type is NumberType
+        return isinstance(node.expression.inferred_type, NumberType)
 
     @staticmethod
     @dispatch(NotNode)
     def visit_node(node: NotNode, context: Context) -> bool:
         TypeCheckVisitor.visit_node(node.expression, context)
-        return node.expression.inferred_type is BooleanType
+        return isinstance(node.expression.inferred_type, BooleanType)
 
     @staticmethod
     @dispatch(While | Elif)
     def visit_node(node: While, context: Context) -> bool:
 
         TypeCheckVisitor.visit_node(node.condition, context)
-        if node.condition.inferred_type is not BooleanType:
+        if not isinstance(node.condition.inferred_type, BooleanType):
             print(
                 f"Can not implicitly convert from {node.condition.inferred_type.name} to boolean"
             )
@@ -86,7 +89,7 @@ class TypeCheckVisitor(IVisitor):
 
         TypeCheckVisitor.visit_node(node.condition, context)
 
-        if node.condition.inferred_type is not BooleanType:
+        if not isinstance(node.condition.inferred_type, BooleanType):
             print(
                 f"Can not implicitly convert from {node.condition.inferred_type.name} to boolean"
             )
@@ -110,7 +113,7 @@ class TypeCheckVisitor(IVisitor):
 
         TypeCheckVisitor.visit_node(node.iterable, context)
 
-        if node.iterable.inferred_type is not RangeType:
+        if not isinstance(node.iterable.inferred_type, RangeType):
             print(
                 f"Can not implicitly convert from {node.iterable.inferred_type.name} to iterable"
             )
@@ -129,20 +132,22 @@ class TypeCheckVisitor(IVisitor):
 
         object_type = node.obj.inferred_type
 
-        if object_type is UnkownType:
+        if isinstance(object_type, UnkownType):
             print("Can not infer type of expression")
             return False
 
-        method = object_type.get_method(node.identifier)
+        method = object_type.get_method(node.invocation.identifier)
         if method is None:
-            print(f"Method {node.identifier} is not defined in {object_type.name}")
+            print(
+                f"Method {node.invocation.identifier} is not defined in {object_type.name}"
+            )
             return False
 
-        #     if len(node.arguments) != len(method.params):
-        #         print(
-        #             f"Method {node.identifier} expects {len(method.params)} arguments, but {len(node.arguments)} were given"
-        #         )
-        #         return False
+        if len(node.invocation.arguments) != len(method.params):
+            print(
+                f"Method {node.invocation.identifier} expects {len(method.params)} arguments, but {len(node.arguments)} were given"
+            )
+            return False
 
         for i, arg in enumerate(node.arguments):
             if arg.inferred_type is not method.params[i]:
@@ -150,6 +155,8 @@ class TypeCheckVisitor(IVisitor):
                     f"Can not implicitly convert from {arg.inferred_type.name} to {method.params[i].name}"
                 )
                 return False
+
+        return True
 
     @staticmethod
     @dispatch(Identifier)

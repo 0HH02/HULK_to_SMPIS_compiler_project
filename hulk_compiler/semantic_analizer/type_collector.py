@@ -2,17 +2,18 @@
     This module contains the AST visitor class.
 """
 
-from multipledispatch import dispatch
 from dataclasses import dataclass
-from ..parser.ast.ast import Program, TypeDeclaration
+from multipledispatch import dispatch
 from .types import Method, IdentifierVar, Type
 from .context import Context
+from ..parser.ast.ast import Program, TypeDeclaration
 
 # pylint: disable=function-redefined
 
 
 @dataclass
 class TypeCollector:
+
     context: Context
 
     @dispatch(Program)

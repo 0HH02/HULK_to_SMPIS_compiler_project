@@ -109,6 +109,7 @@ class GrammarUtils:
 
         for terminal in grammar.terminals:
             first_set[terminal] = {terminal}
+
         for no_terminal in grammar.non_terminals:
             first_set[no_terminal] = set()
 

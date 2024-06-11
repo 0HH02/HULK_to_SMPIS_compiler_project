@@ -8,7 +8,7 @@ from .grammar.grammar import Grammar, Symbol
 from .grammar.grammar_utils import GrammarUtils, Item
 from .ast.ast import ASTNode
 from .parsing_action import ParsingAction, Shift, Reduce, Accept, GoTo
-from .parser_exceptions import ConflictActionError
+from .parser_exceptions import ConflictActionError, ParsingError
 
 
 class ParserLR1:
@@ -94,7 +94,9 @@ class ParserLR1:
 
                 return action.body.attributation(body_token_values)
             else:
-                raise Exception()
+                raise ParsingError(
+                    f"Invalid parsing-action in action table row : {state}, column : {token[0]}"
+                )
 
     def _compile_grammar(self) -> dict[int, dict[Symbol, ParsingAction]]:
         """
@@ -114,7 +116,7 @@ class ParserLR1:
             for item in state_items:
                 if item.can_reduce:
                     if item.head == self._grammar.seed:
-                        if not self._grammar.eof in state:
+                        if self._grammar.eof not in state:
                             state[self._grammar.eof] = Accept(item.body)
                         else:
                             raise ConflictActionError(
@@ -122,7 +124,7 @@ class ParserLR1:
                             )
 
                     else:
-                        if not item.lookahead in state:
+                        if item.lookahead not in state:
                             state[item.lookahead] = Reduce(item.head, item.body)
                         else:
                             raise ConflictActionError(
@@ -130,13 +132,13 @@ class ParserLR1:
                             )
                 else:
                     if item.next_symbol.is_terminal():
-                        if not item.next_symbol in state:
+                        if item.next_symbol not in state:
                             state[item.next_symbol] = Shift(
                                 go_to_table[num_state][item.next_symbol]
                             )
 
                     else:
-                        if not item.next_symbol in state:
+                        if item.next_symbol not in state:
                             state[item.next_symbol] = GoTo(
                                 go_to_table[num_state][item.next_symbol]
                             )

@@ -1,3 +1,7 @@
+"""
+This module contains the ASTPrinter class, which is used to print the AST
+"""
+
 from multipledispatch import dispatch
 from .ast import (
     Program,
@@ -34,10 +38,21 @@ from .ast import (
 
 
 class ASTPrinter:
+    """
+    A class that provides methods to print the Abstract Syntax Tree (AST) nodes
+    using the visitor pattern.
+    """
 
     @staticmethod
     @dispatch(Program, int)
-    def visit_node(node: Program, tabs: int = 0):
+    def visit_node(node: Program, tabs: int = 0) -> None:
+        """
+        Visits a node in the AST and prints its representation.
+
+        Args:
+            node (Program): The node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "program: {")
         for define in node.defines:
             ASTPrinter.visit_node(define, tabs + 1)
@@ -46,7 +61,14 @@ class ASTPrinter:
 
     @staticmethod
     @dispatch(While, int)
-    def visit_node(node: While, tabs: int):
+    def visit_node(node: While, tabs: int) -> None:
+        """
+        Visits a node in the AST and prints its representation.
+
+        Args:
+            node (While): The node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "while:{")
         ASTPrinter.visit_node(node.condition, tabs + 1)
         ASTPrinter.visit_node(node.body, tabs + 1)
@@ -55,6 +77,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(If, int)
     def visit_node(node: If, tabs: int):
+        """
+        Prints the representation of an If node in the abstract syntax tree.
+
+        Args:
+            node (If): The If node to be printed.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "if: {")
         ASTPrinter.visit_node(node.condition, tabs + 1)
         ASTPrinter.visit_node(node.body, tabs + 1)
@@ -68,6 +97,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(Elif, int)
     def visit_node(node: Elif, tabs: int):
+        """
+        Visits an Elif node and prints its representation.
+
+        Args:
+            node (Elif): The Elif node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "elif: {")
         ASTPrinter.visit_node(node.condition, tabs + 1)
         ASTPrinter.visit_node(node.body, tabs + 1)
@@ -76,6 +112,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(For, int)
     def visit_node(node: For, tabs: int):
+        """
+        Visits a For node in the AST and prints its contents.
+
+        Args:
+            node (For): The For node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "for {")
         print("   " * (tabs + 1), "index: ", node.index_identifier)
         ASTPrinter.visit_node(node.iterable, tabs + 1)
@@ -85,6 +128,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(LetVar, int)
     def visit_node(node: LetVar, tabs: int):
+        """
+        Visits a LetVar node and prints its contents.
+
+        Args:
+            node (LetVar): The LetVar node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "let: {")
         for var in node.declarations:
             ASTPrinter.visit_node(var, tabs + 1)
@@ -212,6 +262,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(ComprehensionVector, int)
     def visit_node(node: ComprehensionVector, tabs: int):
+        """
+        Visits a ComprehensionVector node and prints its contents.
+
+        Args:
+            node (ComprehensionVector): The ComprehensionVector node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "ComprehensionVector: {")
         ASTPrinter.visit_node(node.generator, tabs + 1)
         print("   " * (tabs + 1), "item: ", node.item.lex)
@@ -221,6 +278,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(Instanciate, int)
     def visit_node(node: Instanciate, tabs: int):
+        """
+        Visits an instance node in the AST and prints its information.
+
+        Args:
+            node (Instanciate): The instance node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "instanciate: {")
         print("   " * (tabs + 1), "identifier: ", node.identifier)
         for arg in node.params:
@@ -230,6 +294,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(DestructiveAssign, int)
     def visit_node(node: DestructiveAssign, tabs: int):
+        """
+        Visits a DestructiveAssign node and prints its contents.
+
+        Args:
+            node (DestructiveAssign): The DestructiveAssign node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "destructive_assigment: {")
         print("   " * (tabs + 1), "identifier", node.identifier)
         ASTPrinter.visit_node(node.expression, tabs + 1)
@@ -238,6 +309,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(VariableDeclaration, int)
     def visit_node(node: VariableDeclaration, tabs: int):
+        """
+        Visits a VariableDeclaration node and prints its information.
+
+        Args:
+            node (VariableDeclaration): The VariableDeclaration node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "variable_declaration: {")
         print("   " * (tabs + 1), "identifier", node.identifier)
         ASTPrinter.visit_node(node.expression, tabs + 1)
@@ -246,6 +324,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(ProtocolDeclaration, int)
     def visit_node(node: ProtocolDeclaration, tabs: int):
+        """
+        Visits a ProtocolDeclaration node and prints its contents.
+
+        Args:
+            node (ProtocolDeclaration): The ProtocolDeclaration node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "protoco_declaration: {")
         print("   " * (tabs + 1), "identifier: ", node.identifier)
         for ext in node.extends:
@@ -257,6 +342,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(Parameter, int)
     def visit_node(node: Parameter, tabs: int):
+        """
+        Visits a Parameter node and prints its contents.
+
+        Args:
+            node (Parameter): The Parameter node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "parameter: {")
         print("   " * (tabs + 1), "identifier", node.identifier)
         print("   " * tabs, "}")
@@ -264,6 +356,13 @@ class ASTPrinter:
     @staticmethod
     @dispatch(TypeDeclaration, int)
     def visit_node(node: TypeDeclaration, tabs: int):
+        """
+        Visits a TypeDeclaration node and prints its information.
+
+        Args:
+            node (TypeDeclaration): The TypeDeclaration node to visit.
+            tabs (int): The number of tabs for indentation.
+        """
         print("   " * tabs, "type: {")
         print("   " * (tabs + 1), "identifier: ", node.identifier)
         for param in node.params:

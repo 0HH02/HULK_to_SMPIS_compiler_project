@@ -16,6 +16,14 @@ from .semantic_exceptions import RedefineException, NotDeclaredVariableException
 
 class Context:
     def __init__(self, father: "Context" = None) -> None:
+        """
+        Initializes a new instance of the Context class.
+        This class represents the context of a AST and it is use to store
+        the methods, variables and types declared in the program.
+
+        Args:
+            father (Context, optional): The parent context. Defaults to None.
+        """
         self.types = {
             "Object": ObjectType(),
             "Boolean": BooleanType(),
@@ -183,117 +191,6 @@ class Context:
             return next([var for var in self.variables if var.name == name])
         except StopIteration as e:
             raise NotDeclaredVariableException(name) from e
-
-    # def get_method(self, name: str):
-    #     try:
-    #         return True, next(method for method in self.methods if method.name == name)
-    #     except StopIteration:
-    #         return False, f'Method "{name}" is not defined.'
-
-    # def update_method(self, name: str, param_types: list, return_type):
-    #     try:
-    #         method = next(method for method in self.methods if method.name == name)
-    #         method.param_types = param_types
-    #         method.return_type = return_type
-    #     except StopIteration:
-    #         return False, f'Method "{name}" is not defined.'
-
-    # def all_methods(self, clean=True):
-    #     plain = OrderedDict()
-    #     for method in self.methods:
-    #         plain[method.name] = (method, self)
-    #     return plain.values() if clean else plain
-
-    # def get_lowest_ancestor(self, type_a, type_b):
-
-    #     if type_a in [UnknownType(), UndefinedType()] or type_a.is_protocol:
-    #         return type_b
-
-    #     if type_b in [UnknownType(), UndefinedType()] or type_b.is_protocol:
-    #         return type_a
-
-    #     while type_a.depth > type_b.depth:
-    #         type_a = type_a.parent
-
-    #     while type_b.depth > type_a.depth:
-    #         type_b = type_b.parent
-
-    #     while type_b != type_a:
-    #         type_a = type_a.parent
-    #         type_b = type_b.parent
-
-    #     return type_a
-
-    # def check_inheritance(self, child: Type, parent: Type, args, line):
-
-    #     errors = []
-
-    #     if len(child.params) > 0:
-
-    #         if len(args) != len(parent.params):
-    #             errors.append(
-    #                 (
-    #                     f"{parent.name} expects {len(parent.params)} arguments, "
-    #                     f"got {len(args)}",
-    #                     line,
-    #                 )
-    #             )
-
-    #         parent_args = list(parent.params.values())
-
-    #         for i in range(len(parent_args)):
-    #             if not parent_args[i] or parent_args[i] == UnknownType():
-    #                 parent_args[i] = parent.params_inferred_type[i]
-
-    #         for i in range(len(args)):
-    #             if not args[i].conforms_to(parent_args[i]):
-    #                 errors.append(
-    #                     (
-    #                         f"Argument type mismatch, on {parent.name} got {args[i]} "
-    #                         f"expected {parent_args[i]}",
-    #                         line,
-    #                     )
-    #                 )
-
-    #     parent_methods = parent.all_methods(False)
-    #     child_methods = child.all_methods(False)
-
-    #     for name, (method, _) in child_methods.items():
-
-    #         if name in parent_methods:
-
-    #             base_method = parent_methods[name][0]
-
-    #             if len(base_method.param_types) != len(method.param_types):
-    #                 errors.append(
-    #                     (
-    #                         f"{name} expects {len(base_method.param_types)} parameters, "
-    #                         f"got {len(method.param_types)}",
-    #                         method.line,
-    #                     )
-    #                 )
-
-    #             for i in range(len(base_method.param_types)):
-
-    #                 if method.param_types[i] != base_method.param_types[i]:
-    #                     errors.append(
-    #                         (
-    #                             f"Parameter type mismatch, on {method.param_names[i].name} got {method.param_types[i].name} "
-    #                             f"expected {base_method.param_types[i].name}",
-    #                             method.line,
-    #                         )
-    #                     )
-
-    #             if method.return_type != base_method.return_type:
-    #                 errors.append(
-    #                     (
-    #                         f"Return type mismatch, on {name} got {method.return_type} "
-    #                         f"expected {base_method.return_type}",
-    #                         method.line,
-    #                     )
-    #                 )
-
-    #     return errors
 
     def __str__(self):
         return (
