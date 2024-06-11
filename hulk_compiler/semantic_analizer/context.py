@@ -9,7 +9,7 @@ from .types import (
     Type,
     Method,
     RangeType,
-    Identifier,
+    Variable,
 )
 from .semantic_exceptions import RedefineException
 
@@ -24,25 +24,25 @@ class Context:
         }
         self.var = []
         self.methods = [
-            Method("sqrt", [Identifier("value", NumberType())], NumberType()),
-            Method("sin", [Identifier("angle", NumberType())], NumberType()),
-            Method("cos", [Identifier("angle", NumberType())], NumberType()),
+            Method("sqrt", [Variable("value", NumberType())], NumberType()),
+            Method("sin", [Variable("angle", NumberType())], NumberType()),
+            Method("cos", [Variable("angle", NumberType())], NumberType()),
             Method(
                 "log",
                 [
-                    Identifier("value", NumberType()),
-                    Identifier("base", NumberType()),
+                    Variable("value", NumberType()),
+                    Variable("base", NumberType()),
                 ],
                 NumberType(),
             ),
-            Method("exp", [Identifier("value", NumberType())], NumberType()),
+            Method("exp", [Variable("value", NumberType())], NumberType()),
             Method("rand", [], NumberType()),
-            Method("print", [Identifier("message", StringType)], StringType()),
+            Method("print", [Variable("message", StringType)], StringType()),
             Method(
                 "range",
                 [
-                    Identifier("start", NumberType()),
-                    Identifier("end", NumberType()),
+                    Variable("start", NumberType()),
+                    Variable("end", NumberType()),
                 ],
                 RangeType(),
             ),
@@ -79,13 +79,13 @@ class Context:
             raise RedefineException("Variable", name)
         self.var.append(name)
 
-    def define_method(self, name: str, params: list[Identifier], return_type):
+    def define_method(self, name: str, params: list[Variable], return_type):
         """
         Defines a method in the context.
 
         Args:
             name (str): The name of the method.
-            params (list[Identifier]): The list of method parameters.
+            params (list[Variable]): The list of method parameters.
             return_type: The return type of the method.
 
         Raises:

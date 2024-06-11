@@ -159,6 +159,7 @@ class NonTerminal(Symbol):
             body, attributation = other
 
         else:
+            print(other)
             body = other
             attributation = None
 
@@ -197,10 +198,8 @@ class NonTerminal(Symbol):
                 if callable(attributation):
                     for sentence in body:
                         sentence.attributation = attributation
-
             if not self in self.grammar.productions:
                 self.grammar.productions[self] = body
-
             else:
                 self.grammar.productions[self].append(body)
 

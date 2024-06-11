@@ -27,7 +27,7 @@ from hulk_compiler.parser.ast.ast import (
     NegativeNode,
     LiteralNode,
     Operator,
-    Variable,
+    Identifier,
 )
 from .grammar import Grammar, Symbol
 from ...lexer.token import TokenType
@@ -50,7 +50,7 @@ def get_hulk_grammar() -> Grammar:
 
     grammar = Grammar()
 
-    program = grammar.set_non_terminals(["program"])[0][0]
+    program = grammar.set_non_terminals(["program"])[0]
     grammar.set_seed(program)
 
     (
@@ -714,7 +714,7 @@ def get_hulk_grammar() -> Grammar:
     ), (
         lambda h, s: s[1],
         lambda h, s: Call(None, s[1][0], s[1][1:]),
-        lambda h, s: Variable(s[1]),
+        lambda h, s: Identifier(s[1]),
         lambda h, s: s[1],
         lambda h, s: s[1],
         lambda h, s: s[1],
@@ -766,7 +766,7 @@ def get_hulk_grammar() -> Grammar:
         lambda h, s: Instanciate(s[2][0], s[2][1])
     )
 
-    literal <= (number | string | true | false), (lambda h, s: LiteralNode(s[1]),)
+    literal <= (number | string | true | false), (lambda h, s: LiteralNode(s[1]))
 
     mapping: dict[TokenType, Symbol] = {
         TokenType.NUMBER_LITERAL: number,

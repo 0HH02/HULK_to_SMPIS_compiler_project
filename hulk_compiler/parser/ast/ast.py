@@ -5,6 +5,7 @@ This module contains the AST nodes for the Hulk programming language.
 from dataclasses import dataclass
 from enum import Enum
 from hulk_compiler.lexer.token import Token
+
 from ...semantic_analizer.types import Type, UnkownType
 from ...core.i_visitor import IVisitor
 
@@ -160,7 +161,7 @@ class VariableDeclaration(Expression):
 
 
 @dataclass
-class Variable(Expression):
+class Identifier(Expression):
     """
     Represents a variable node in the AST.
     """
