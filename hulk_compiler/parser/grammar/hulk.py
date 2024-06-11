@@ -785,7 +785,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         | instantiation,
         (
             lambda s: s[0],
-            lambda s: Invocation(s[0][0], s[0][1:]),
+            lambda s: s[0],
             lambda s: Identifier(s[0]),
             lambda s: s[0],
             lambda s: s[0],
@@ -798,7 +798,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
 
     invocation_expression <= (
         identifier + open_parenthesis + ~argument_list + close_parenthesis,
-        (lambda s: [s[0]] + s[2], lambda s: [s[0]]),
+        (lambda s: Invocation(s[0], s[2]), lambda s: Invocation(s[0], [])),
     )
 
     argument_list <= (
@@ -848,7 +848,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
 
     instantiation <= (
         new + invocation_expression,
-        (lambda s: Instanciate(s[1][0], s[1][1] if len(s[1]) > 1 else [])),
+        (lambda s: Instanciate(s[1].identifier, s[1].arguments)),
     )
 
     literal <= (number | string | true | false, (lambda s: LiteralNode(s[0])))

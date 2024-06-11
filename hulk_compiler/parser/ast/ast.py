@@ -88,7 +88,7 @@ class AttributeDeclaration(ASTNode):
 
     identifier: str
     expression: "Expression"
-    type: any = None
+    type: Type
 
 
 @dataclass
@@ -100,7 +100,7 @@ class FunctionDeclaration(DefineStatement):
     identifier: str
     params: list["Parameter"]
     body: "Expression"
-    return_type: any = None
+    return_type: Type | None = None
 
 
 @dataclass
@@ -185,6 +185,14 @@ class FunctionCall(Expression):
 
 @dataclass
 class Invocation(Expression):
+    """
+    Represents an invocation of a function or method.
+
+    Attributes:
+        identifier (str): The name of the function or method being invoked.
+        arguments (list[Expression]): The list of arguments passed to the function or method.
+    """
+
     identifier: str
     arguments: list["Expression"]
 

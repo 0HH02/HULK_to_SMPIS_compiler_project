@@ -223,10 +223,10 @@ class TypeCheckVisitor(IVisitor):
         ]:
             return TypeCheckVisitor._visit_binary_aritmethic(node, context)
 
-        elif node.operator in [Operator.AND, Operator.OR]:
+        if node.operator in [Operator.AND, Operator.OR]:
             return TypeCheckVisitor._visit_binary_logic(node, context)
 
-        elif node.operator in [
+        if node.operator in [
             Operator.EQ,
             Operator.NEQ,
             Operator.GT,
@@ -236,13 +236,13 @@ class TypeCheckVisitor(IVisitor):
         ]:
             return TypeCheckVisitor._visit_binary_comparison(node, context)
 
-        elif node.operator is Operator.IS:
+        if node.operator is Operator.IS:
             return TypeCheckVisitor._visit_binary_type_checker(node, context)
 
-        elif node.operator is Operator.AS:
+        if node.operator is Operator.AS:
             return TypeCheckVisitor._visit_binary_downcast(node, context)
 
-        elif node.operator in [Operator.CONCAT, Operator.DCONCAT]:
+        if node.operator in [Operator.CONCAT, Operator.DCONCAT]:
             return TypeCheckVisitor._visit_binary_concat(node, context)
 
         return False
@@ -253,13 +253,13 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.left, context)
         TypeCheckVisitor.visit_node(node.right, context)
 
-        if node.left.inferred_type is not NumberType:
+        if not isinstance(node.left.inferred_type, NumberType):
             print(
                 f"Can not implicitly convert from {node.left.inferred_type.name} to number"
             )
             return False
 
-        if node.right.inferred_type is not NumberType:
+        if not isinstance(node.right.inferred_type, NumberType):
             print(
                 f"Can not implicitly convert from {node.right.inferred_type.name} to number"
             )
@@ -273,13 +273,13 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.left, context)
         TypeCheckVisitor.visit_node(node.right, context)
 
-        if node.left.inferred_type is not BooleanType:
+        if not isinstance(node.left.inferred_type, BooleanType):
             print(
                 f"Can not implicitly convert from {node.left.inferred_type.name} to boolean"
             )
             return False
 
-        if node.right.inferred_type is not BooleanType:
+        if not isinstance(node.right.inferred_type, BooleanType):
             print(
                 f"Can not implicitly convert from {node.right.inferred_type.name} to boolean"
             )
@@ -307,7 +307,7 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.left, context)
         TypeCheckVisitor.visit_node(node.right, context)
 
-        if node.right is Identifier:
+        if isinstance(node.right, Identifier):
             if not context.check_type(node.right.identifier):
                 print(f"Type {node.right.identifier} is not defined")
                 return False
@@ -323,7 +323,7 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.left, context)
         TypeCheckVisitor.visit_node(node.right, context)
 
-        if node.right is Identifier:
+        if isinstance(node.right, Identifier):
             if not context.check_type(node.right.identifier):
                 print(f"Type {node.right.identifier} is not defined")
                 return False
@@ -339,11 +339,11 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.right, context)
 
         if (
-            node.left.inferred_type is not NumberType
-            and node.left.inferred_type is not StringType
+            not isinstance(node.left.inferred_type, NumberType)
+            and not isinstance(node.left.inferred_type, StringType)
         ) or (
-            node.right.inferred_type is not NumberType
-            and node.right.inferred_type is not StringType
+            not isinstance(node.right.inferred_type, NumberType)
+            and not isinstance(node.right.inferred_type, StringType)
         ):
             print(
                 f"Can not implicitly convert from {node.left.inferred_type.name} to string"

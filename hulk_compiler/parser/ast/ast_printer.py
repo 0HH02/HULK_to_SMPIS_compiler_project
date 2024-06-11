@@ -44,7 +44,7 @@ class ASTPrinter:
     """
 
     @staticmethod
-    @dispatch(Program, int)
+    @dispatch(Program)
     def visit_node(node: Program, tabs: int = 0) -> None:
         """
         Visits a node in the AST and prints its representation.
@@ -162,6 +162,7 @@ class ASTPrinter:
     def visit_node(node: FunctionCall, tabs: int):
         print("   " * tabs, "function_call: {")
         ASTPrinter.visit_node(node.obj, tabs + 1)
+        print("as")
         ASTPrinter.visit_node(node.invocation, tabs + 1)
         print("   " * tabs, "}")
 
@@ -212,7 +213,7 @@ class ASTPrinter:
     @staticmethod
     @dispatch(LiteralNode, int)
     def visit_node(node: LiteralNode, tabs: int):
-        print("   " * tabs, "literal: ", node.lex.lex)
+        print("   " * tabs, "literal: ", node.token.lex)
 
     @staticmethod
     @dispatch(Inherits, int)
@@ -228,10 +229,11 @@ class ASTPrinter:
     def visit_node(node: FunctionDeclaration, tabs: int):
         print("   " * tabs, "function_declaration: {")
         print("   " * (tabs + 1), "identifier: ", node.identifier)
+
         for arg in node.params:
             ASTPrinter.visit_node(arg, tabs + 1)
-        if node.return_type:
-            print("   " * (tabs + 1), "return_type: ", node.return_type)
+
+        print("   " * (tabs + 1), "return_type: ", node.return_type)
         ASTPrinter.visit_node(node.body, tabs + 1)
         print("   " * tabs, "}")
 
@@ -240,6 +242,8 @@ class ASTPrinter:
     def visit_node(node: AttributeDeclaration, tabs: int):
         print("   " * tabs, "atribute: {")
         print("   " * (tabs + 1), "identifier: ", node.identifier)
+        print("   " * (tabs + 1), "type: ", node.type)
+
         ASTPrinter.visit_node(node.expression, tabs + 1)
         print("   " * tabs, "}")
 
@@ -317,7 +321,8 @@ class ASTPrinter:
             tabs (int): The number of tabs for indentation.
         """
         print("   " * tabs, "variable_declaration: {")
-        print("   " * (tabs + 1), "identifier", node.identifier)
+        print("   " * (tabs + 1), "identifier:", node.identifier)
+        print("   " * (tabs + 1), "type:", node.type)
         ASTPrinter.visit_node(node.expression, tabs + 1)
         print("   " * tabs, "}")
 
