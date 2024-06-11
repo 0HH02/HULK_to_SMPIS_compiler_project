@@ -1,82 +1,39 @@
-"""
-    This module contains the AST visitor class.
-"""
-
-from dataclasses import dataclass
 from multipledispatch import dispatch
-from ..lexer.token import TokenType
-from .types import (
-    BooleanType,
-    RangeType,
-    UnkownType,
-    NumberType,
-    StringType,
-    IdentifierVar,
-)
-from .semantic_exceptions import InvalidDeclarationException, InferTypeException
-from .context import Context
+from ..core.i_visitor import IVisitor
 from ..parser.ast.ast import (
-    Operator,
-    While,
+    LiteralNode,
+    PositiveNode,
+    NegativeNode,
+    NotNode,
+    Identifier,
     If,
     LetVar,
-    For,
     Elif,
-    AttributeCall,
+    While,
+    For,
     FunctionCall,
-    Identifier,
-    NegativeNode,
-    PositiveNode,
-    NotNode,
     BinaryExpression,
-    Program,
-    TypeDeclaration,
-    Inherits,
-    FunctionDeclaration,
-    AttributeDeclaration,
-    LiteralNode,
-    IndexNode,
-    Vector,
-    ComprehensionVector,
-    Instanciate,
-    ExpressionBlock,
-    DestructiveAssign,
     VariableDeclaration,
-    ProtocolDeclaration,
-    Parameter,
-    Invocation,
+    Operator,
 )
-from ..core.i_visitor import IVisitor
-from .types import Type
+
+from .semantic_exceptions import (
+    InferTypeException,
+    InvalidDeclarationException,
+)
+
+from .context import Context
+from .types import (
+    StringType,
+    NumberType,
+    BooleanType,
+    RangeType,
+    IdentifierVar,
+    UnkownType,
+)
+from ..lexer.token import TokenType
 
 # pylint: disable=function-redefined
-
-
-@dataclass
-class TypeCollector:
-    context: Context
-
-    @dispatch(Program)
-    def visit(self, node: Program):
-        for class_def in node.defines:
-            if isinstance(class_def, TypeDeclaration):
-                self.visit(class_def)
-
-    @dispatch(TypeDeclaration)
-    def visit(self, node: TypeDeclaration):
-        current_type: Type = self.context.define_type(node.identifier)
-        for attr_def in node.attributes:
-            current_type.attributes[attr_def.identifier] = Variable(
-                attr_def.identifier, None
-            )
-
-        for func_def in node.functions:
-            params: list[Variable] = []
-            for param in func_def.params:
-                params.append(Variable(param.identifier, None))
-            current_type.methods[func_def.identifier] = Method(
-                func_def.identifier, params, func_def.return_type
-            )
 
 
 class TypeCheckVisitor(IVisitor):
@@ -165,8 +122,8 @@ class TypeCheckVisitor(IVisitor):
         return TypeCheckVisitor.visit_node(node.body, new_context)
 
     @staticmethod
-    @dispatch(Call)
-    def visit_node(node: Call, context: Context) -> bool:
+    @dispatch(FunctionCall)
+    def visit_node(node: FunctionCall, context: Context) -> bool:
 
         TypeCheckVisitor.visit_node(node.obj, context)
 
@@ -193,8 +150,6 @@ class TypeCheckVisitor(IVisitor):
                     f"Can not implicitly convert from {arg.inferred_type.name} to {method.params[i].name}"
                 )
                 return False
-
-    #     return True
 
     @staticmethod
     @dispatch(Identifier)
