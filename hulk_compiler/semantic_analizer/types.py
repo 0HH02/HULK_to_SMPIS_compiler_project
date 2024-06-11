@@ -13,15 +13,15 @@ class Type:
 
     def __init__(self, name: str) -> None:
         self.name = name
-        self.parent: Type = None
-        self.params: dict[str, Variable] = {}
-        self.attributes: dict[str, Variable] = {}
+        self.parent: Type | None = None
+        self.params: dict[str, IdentifierVar] = {}
+        self.attributes: dict[str, IdentifierVar] = {}
         self.methods: dict[str, Method] = {}
 
     def __eq__(self, value: object) -> bool:
         return isinstance(value, type(self)) and self.name == value.name
 
-    def get_attribute(self, name: str):
+    def get_attribute(self, name: str) -> "IdentifierVar" | None:
         """
         Retrieves the attribute with the given name.
 
@@ -172,13 +172,13 @@ class RangeType(Type):
             "next": Method("next", [], NumberType()),
         }
         self.attributes = {
-            "min": Variable("min", NumberType()),
-            "max": Variable("max", NumberType()),
+            "min": IdentifierVar("min", NumberType()),
+            "max": IdentifierVar("max", NumberType()),
         }
 
         self.params = {
-            "min": Variable("min", NumberType()),
-            "max": Variable("max", NumberType()),
+            "min": IdentifierVar("min", NumberType()),
+            "max": IdentifierVar("max", NumberType()),
         }
 
 
@@ -204,7 +204,7 @@ class Method:
 
     def __init__(self, name: str, params, return_type) -> None:
         self.name: str = name
-        self.params: list[Variable] = params
+        self.params: list[IdentifierVar] = params
         self.return_type: Type = return_type
         self.line = -1
 
@@ -228,7 +228,7 @@ class Method:
         return self.__str__()
 
 
-class Variable:
+class IdentifierVar:
     """
     Represents a param or an atributte in a class.
 
@@ -243,7 +243,7 @@ class Variable:
 
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, Variable)
+            isinstance(value, IdentifierVar)
             and self.name == value.name
             and self.type == value.type
         )

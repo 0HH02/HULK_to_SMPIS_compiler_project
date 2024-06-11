@@ -7,7 +7,6 @@ from enum import Enum
 from hulk_compiler.lexer.token import Token
 
 from ...semantic_analizer.types import Type, UnkownType
-from ...core.i_visitor import IVisitor
 
 
 class Operator(Enum):
@@ -39,21 +38,6 @@ class ASTNode:
     """
     Base class for all AST nodes.
     """
-
-    def validate(self, visitor: IVisitor, context):
-        """
-        Validates the current node by invoking the corresponding
-        visit method on the provided visitor.
-
-        Args:
-            visitor (IVisitor): The visitor object used to perform the validation.
-            context: Additional context information that can be passed to the visitor.
-
-        Returns:
-            The result of the visit method called on the visitor.
-
-        """
-        return visitor.visit_node(self, context)
 
 
 @dataclass
@@ -157,7 +141,7 @@ class VariableDeclaration(Expression):
 
     identifier: str
     expression: Expression
-    type: any = None
+    type: Type | None = None
 
 
 @dataclass
@@ -264,7 +248,7 @@ class LetVar(Expression):
     Represents a let variable node in the AST.
     """
 
-    declarations: list[Expression]
+    declarations: list[VariableDeclaration]
     body: Expression
 
 
@@ -352,4 +336,4 @@ class LiteralNode(Expression):
     Represents a literal node in the AST.
     """
 
-    lex: Token
+    token: Token

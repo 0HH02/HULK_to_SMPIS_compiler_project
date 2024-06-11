@@ -9,9 +9,9 @@ from .types import (
     Type,
     Method,
     RangeType,
-    Variable,
+    IdentifierVar,
 )
-from .semantic_exceptions import RedefineException
+from .semantic_exceptions import RedefineException, NotDeclaredVariableException
 
 
 class Context:
@@ -22,27 +22,27 @@ class Context:
             "Number": NumberType(),
             "String": StringType(),
         }
-        self.var = []
+        self.variables: set[IdentifierVar] = set()
         self.methods = [
-            Method("sqrt", [Variable("value", NumberType())], NumberType()),
-            Method("sin", [Variable("angle", NumberType())], NumberType()),
-            Method("cos", [Variable("angle", NumberType())], NumberType()),
+            Method("sqrt", [IdentifierVar("value", NumberType())], NumberType()),
+            Method("sin", [IdentifierVar("angle", NumberType())], NumberType()),
+            Method("cos", [IdentifierVar("angle", NumberType())], NumberType()),
             Method(
                 "log",
                 [
-                    Variable("value", NumberType()),
-                    Variable("base", NumberType()),
+                    IdentifierVar("value", NumberType()),
+                    IdentifierVar("base", NumberType()),
                 ],
                 NumberType(),
             ),
-            Method("exp", [Variable("value", NumberType())], NumberType()),
+            Method("exp", [IdentifierVar("value", NumberType())], NumberType()),
             Method("rand", [], NumberType()),
-            Method("print", [Variable("message", StringType)], StringType()),
+            Method("print", [IdentifierVar("message", StringType)], StringType()),
             Method(
                 "range",
                 [
-                    Variable("start", NumberType()),
-                    Variable("end", NumberType()),
+                    IdentifierVar("start", NumberType()),
+                    IdentifierVar("end", NumberType()),
                 ],
                 RangeType(),
             ),
@@ -64,7 +64,7 @@ class Context:
         self.types[name] = Type(name)
         return self.types[name]
 
-    def define_var(self, name: str) -> None:
+    def define_variable(self, name: str) -> None:
         """
         Defines a variable in the context.
 
@@ -77,9 +77,9 @@ class Context:
 
         if self.check_var(name):
             raise RedefineException("Variable", name)
-        self.var.append(name)
+        self.variables.add(name)
 
-    def define_method(self, name: str, params: list[Variable], return_type):
+    def define_method(self, name: str, params: list[IdentifierVar], return_type):
         """
         Defines a method in the context.
 
@@ -129,7 +129,7 @@ class Context:
             bool: True if the variable exists, False otherwise.
         """
 
-        if name in self.var:
+        if name in self.variables:
             return True
 
         if self.father:
@@ -169,11 +169,20 @@ class Context:
         """
         return Context(self)
 
-    # def get_type(self, name: str):
-    #     try:
-    #         return True, self.types[name]
-    #     except KeyError:
-    #         return False, f'Type "{name}" is not defined.'
+    def get_var_type(self, name: str):
+        """
+        Retrieves a type from the context.
+
+        Args:
+            name (str): The name of the type to retrieve.
+
+        Returns:
+            The type with the given name.
+        """
+        try:
+            return next([var for var in self.variables if var.name == name])
+        except StopIteration as e:
+            raise NotDeclaredVariableException(name) from e
 
     # def get_method(self, name: str):
     #     try:
