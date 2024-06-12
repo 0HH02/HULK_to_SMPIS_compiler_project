@@ -88,7 +88,7 @@ class AttributeDeclaration(ASTNode):
 
     identifier: str
     expression: "Expression"
-    type: Type
+    type: Type | None = None
 
 
 @dataclass
