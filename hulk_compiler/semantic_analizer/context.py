@@ -24,14 +24,14 @@ class Context:
         Args:
             father (Context, optional): The parent context. Defaults to None.
         """
-        self.types = {
+        self.types: dict[str, Type] = {
             "Object": ObjectType(),
             "Boolean": BooleanType(),
             "Number": NumberType(),
             "String": StringType(),
         }
         self.variables: set[IdentifierVar] = set()
-        self.methods = [
+        self.methods: list[Method] = [
             Method("sqrt", [IdentifierVar("value", NumberType())], NumberType()),
             Method("sin", [IdentifierVar("angle", NumberType())], NumberType()),
             Method("cos", [IdentifierVar("angle", NumberType())], NumberType()),
@@ -177,7 +177,7 @@ class Context:
         """
         return Context(self)
 
-    def get_var_type(self, name: str):
+    def get_var_type(self, name: str) -> Type:
         """
         Retrieves a type from the context.
 
@@ -191,6 +191,26 @@ class Context:
             return next([var for var in self.variables if var.name == name])
         except StopIteration as e:
             raise NotDeclaredVariableException(name) from e
+
+    def get_method(self, name: str, params: int):
+        """
+        Retrieves a method from the context.
+
+        Args:
+            name (str): The name of the method to retrieve.
+            params (int): The number of parameters the method should have.
+
+        Returns:
+            The method with the given name and number of parameters.
+        """
+        for method in self.methods:
+            if method.name == name and len(method.params) == params:
+                return method
+
+        if self.father:
+            return self.father.get_method(name, params)
+
+        raise NotDeclaredVariableException(name)
 
     def __str__(self):
         return (

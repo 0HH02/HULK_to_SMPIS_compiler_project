@@ -317,7 +317,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
     type_definition <= (
         type_terminal
         + identifier
-        + type_arguments
+        + ~type_arguments
         + ~type_inherits
         + open_brace
         + ~type_body
@@ -367,6 +367,51 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                 attributes=[],
                 functions=[],
             ),
+            ###
+            lambda s: TypeDeclaration(
+                identifier=s[1],
+                params=[],
+                inherits=s[2],
+                attributes=[
+                    definition
+                    for definition in s[4]
+                    if isinstance(definition, AttributeDeclaration)
+                ],
+                functions=[
+                    definition
+                    for definition in s[4]
+                    if isinstance(definition, FunctionDeclaration)
+                ],
+            ),
+            lambda s: TypeDeclaration(
+                identifier=s[1],
+                params=[],
+                inherits=s[2],
+                attributes=[],
+                functions=[],
+            ),
+            lambda s: TypeDeclaration(
+                identifier=s[1],
+                params=[],
+                inherits=None,
+                attributes=[
+                    definition
+                    for definition in s[3]
+                    if isinstance(definition, AttributeDeclaration)
+                ],
+                functions=[
+                    definition
+                    for definition in s[3]
+                    if isinstance(definition, FunctionDeclaration)
+                ],
+            ),
+            lambda s: TypeDeclaration(
+                identifier=s[1],
+                params=[],
+                inherits=None,
+                attributes=[],
+                functions=[],
+            ),
         ),
     )
 
@@ -388,11 +433,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         ),
     )
     type_arguments <= (
-        open_parenthesis + ~argument_list_definition + close_parenthesis,
-        (
-            lambda s: s[1],
-            lambda s: [],
-        ),
+        open_parenthesis + argument_list_definition + close_parenthesis,
+        (lambda s: s[1],),
     )
 
     type_inherits <= (

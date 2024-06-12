@@ -88,7 +88,7 @@ class AttributeDeclaration(ASTNode):
 
     identifier: str
     expression: "Expression"
-    type: Type
+    type: Type | None = None
 
 
 @dataclass
@@ -169,7 +169,7 @@ class DestructiveAssign(Expression):
     Represents a destructive assignment node in the AST.
     """
 
-    identifier: str | AttributeCall
+    identifier: Identifier | AttributeCall
     expression: Expression
 
 
