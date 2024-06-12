@@ -29,7 +29,10 @@ from ..parser.ast.ast import (
     Elif,
     While,
     For,
+    Invocation,
     FunctionCall,
+    AttributeCall,
+    DestructiveAssign,
     BinaryExpression,
     VariableDeclaration,
     Operator,
@@ -149,6 +152,25 @@ class TypeCheckVisitor(IVisitor):
             )
             return False
 
+        for i, arg in enumerate(node.invocation.arguments):
+            if arg.inferred_type is not method.params[i]:
+                print(
+                    f"Can not implicitly convert from {arg.inferred_type.name} to {method.params[i].name}"
+                )
+                return False
+
+        return True
+
+    @staticmethod
+    @dispatch(Invocation)
+    def visit_node(node: Invocation, context: Context):
+
+        if not context.check_method(node.identifier, node.arguments):
+            print(f"Method {node.identifier} is not defined")
+            return False
+
+        method = context.get_method(node.identifier, len(node.arguments))
+
         for i, arg in enumerate(node.arguments):
             if arg.inferred_type is not method.params[i]:
                 print(
@@ -157,6 +179,39 @@ class TypeCheckVisitor(IVisitor):
                 return False
 
         return True
+
+    @staticmethod
+    @dispatch(AttributeCall)
+    def visit_node(node: AttributeCall, context: Context):
+        TypeCheckVisitor.visit_node(node.obj, context)
+
+        object_type = node.obj.inferred_type
+        if isinstance(object_type, UnkownType):
+            print("Can not infer type of expression")
+            return False
+        atrribute = object_type.get_attribute(node.identifier)
+
+        if atrribute is None:
+            print(f"Attribute {node.identifier} is not defined in {object_type.name}")
+            return False
+
+        node.inferred_type = atrribute.type
+
+        return True
+
+    @staticmethod
+    @dispatch(DestructiveAssign)
+    def visit_node(node: DestructiveAssign, context: Context):
+        if not isinstance(node.identifier, (AttributeCall, Identifier)):
+            print(
+                "Invalid Assignment , The left part of the assignment must be a variable or attribute"
+            )
+            return False
+
+        TypeCheckVisitor.visit_node(node.identifier, context)
+        TypeCheckVisitor.visit_node(node.expression, context)
+
+        return node.identifier.inferred_type == node.expression.inferred_type
 
     @staticmethod
     @dispatch(Identifier)

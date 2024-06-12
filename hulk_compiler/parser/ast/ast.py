@@ -169,7 +169,7 @@ class DestructiveAssign(Expression):
     Represents a destructive assignment node in the AST.
     """
 
-    identifier: str | AttributeCall
+    identifier: Identifier | AttributeCall
     expression: Expression
 
 
