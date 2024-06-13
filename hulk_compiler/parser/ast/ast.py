@@ -120,7 +120,7 @@ class ProtocolDeclaration(DefineStatement):
     """
 
     identifier: str
-    extends: list["Identifier"]
+    extends: list[str]
     functions: list[FunctionDeclaration]
 
 
