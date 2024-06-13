@@ -434,7 +434,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
     )
     type_arguments <= (
         open_parenthesis + argument_list_definition + close_parenthesis,
-        (lambda s: s[1],),
+        (lambda s: s[1]),
     )
 
     type_inherits <= (
@@ -541,9 +541,9 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + semicolon,
         (
             lambda s: s[0] + [FunctionDeclaration(s[1], s[3], None, s[5])],
-            lambda s: s[0] + [FunctionDeclaration(s[1], None, None, s[4])],
+            lambda s: s[0] + [FunctionDeclaration(s[1], [], None, s[4])],
             lambda s: [FunctionDeclaration(s[0], s[2], None, s[4])],
-            lambda s: [FunctionDeclaration(s[0], None, None, s[3])],
+            lambda s: [FunctionDeclaration(s[0], [], None, s[3])],
         ),
     )
 
@@ -759,8 +759,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
             lambda s: BinaryExpression(Operator.LE, s[0], s[2]),
             lambda s: BinaryExpression(Operator.GT, s[0], s[2]),
             lambda s: BinaryExpression(Operator.GE, s[0], s[2]),
-            lambda s: BinaryExpression(Operator.IS, s[0], s[2]),
-            lambda s: BinaryExpression(Operator.AS, s[0], s[2]),
+            lambda s: BinaryExpression(Operator.IS, s[0], Identifier(s[2].lex)),
+            lambda s: BinaryExpression(Operator.AS, s[0], Identifier(s[2].lex)),
         ),
     )
 
@@ -828,7 +828,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         (
             lambda s: s[0],
             lambda s: s[0],
-            lambda s: Identifier(s[0]),
+            lambda s: Identifier(s[0].lex),
             lambda s: s[0],
             lambda s: s[0],
             lambda s: s[0],

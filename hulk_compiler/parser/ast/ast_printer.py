@@ -234,7 +234,8 @@ class ASTPrinter:
             ASTPrinter.visit_node(arg, tabs + 1)
 
         print("   " * (tabs + 1), "return_type: ", node.return_type)
-        ASTPrinter.visit_node(node.body, tabs + 1)
+        if node.body:
+            ASTPrinter.visit_node(node.body, tabs + 1)
         print("   " * tabs, "}")
 
     @staticmethod
@@ -276,7 +277,7 @@ class ASTPrinter:
         print("   " * tabs, "ComprehensionVector: {")
         ASTPrinter.visit_node(node.generator, tabs + 1)
         print("   " * (tabs + 1), "item: ", node.item.lex)
-        node.iterator()
+        ASTPrinter.visit_node(node.iterator, tabs + 1)
         print("   " * tabs, "}")
 
     @staticmethod
@@ -338,8 +339,7 @@ class ASTPrinter:
         """
         print("   " * tabs, "protoco_declaration: {")
         print("   " * (tabs + 1), "identifier: ", node.identifier)
-        for ext in node.extends:
-            ASTPrinter.visit_node(ext, tabs + 1)
+        print("   " * (tabs + 1), "extend: ", node.extends)
         for func in node.functions:
             ASTPrinter.visit_node(func, tabs + 1)
         print("   " * tabs, "}")
