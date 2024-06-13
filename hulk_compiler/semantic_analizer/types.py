@@ -13,7 +13,7 @@ class Method:
         return_type: The return type of the method.
     """
 
-    def __init__(self, name: str, params, return_type) -> None:
+    def __init__(self, name: str, params: list["IdentifierVar"], return_type: "Type"):
         self.name: str = name
         self.params: list[IdentifierVar] = params
         self.return_type: Type = return_type
@@ -37,45 +37,6 @@ class Method:
 
     def __repr__(self) -> str:
         return self.__str__()
-
-
-class Protocol:
-    """
-    Represents a protocol in the HULK compiler.
-
-    A protocol defines a set of methods that a class can implement.
-    """
-
-    def __init__(self) -> None:
-        self.methods = {}
-
-    def get_method(self, name: str):
-        """
-        Retrieves a method from the protocol.
-
-        Args:
-            name (str): The name of the method to retrieve.
-
-        Returns:
-            bool: True if the method exists in the protocol, False otherwise.
-        """
-        return name in self.methods
-
-    def set_method(self, method: "Method"):
-        """
-        This method sets a method to the protocol.
-        """
-        self.methods[method.name] = method
-
-    def is_implemented_by(self, type_t: "Type"):
-        """
-        This method checks if the protocol is implemented by the given type.
-        """
-        for method in self.methods:
-            if not type_t.get_method(method):
-                return False
-
-        return True
 
 
 class IdentifierVar:
@@ -110,15 +71,21 @@ class Type:
     Represents a base class for types in the semantic analyzer.
     """
 
-    def __str__(self):
-        return self.name
-
-    def __init__(self, name: str) -> None:
+    def __init__(
+        self,
+        name: str,
+        parent: "Type" = None,
+        params: list[IdentifierVar] = None,
+        attributes: list[IdentifierVar] = None,
+        methods: list[Method] = None,
+    ) -> None:
         self.name = name
-        self.parent: Type | None = None
-        self.params: dict[str, IdentifierVar] = {}
-        self.attributes: dict[str, IdentifierVar] = {}
-        self.methods: dict[str, Method] = {}
+        self.parent: Type | None = parent
+        self.params: list[IdentifierVar] = params if params is not None else []
+        self.attributes: list[IdentifierVar] = (
+            attributes if attributes is not None else []
+        )
+        self.methods: list[Method] = methods if methods is not None else []
 
     def __eq__(self, value: object) -> bool:
         return isinstance(value, type(self)) and self.name == value.name
@@ -163,6 +130,9 @@ class Type:
         """
         This method checks if the current type conforms to the other type.
         """
+        if isinstance(other, Protocol):
+            return other.is_implemented_by(self)
+
         if self == other:
             return True
 
@@ -172,6 +142,50 @@ class Type:
             return self.parent.conforms_to(other)
 
         return False
+
+    def __str__(self):
+        return self.name
+
+
+class Protocol:
+    """
+    Represents a protocol in the HULK compiler.
+
+    A protocol defines a set of methods that a class can implement.
+    """
+
+    def __init__(self, name: str, methods: list[Method] | None = None) -> None:
+        self.name: str = name
+        self.methods: list[Method] = methods if methods is not None else []
+
+    def get_method(self, name: str):
+        """
+        Retrieves a method from the protocol.
+
+        Args:
+            name (str): The name of the method to retrieve.
+
+        Returns:
+            bool: True if the method exists in the protocol, False otherwise.
+        """
+        return name in self.methods
+
+    def set_method(self, method: "Method"):
+        """
+        This method sets a method to the protocol.
+        """
+        if method not in self.methods:
+            self.methods.append(method)
+
+    def is_implemented_by(self, type_t: "Type"):
+        """
+        This method checks if the protocol is implemented by the given type.
+        """
+        for method in self.methods:
+            if not type_t.get_method(method):
+                return False
+
+        return True
 
 
 class ObjectType(Type):
@@ -229,6 +243,7 @@ class RangeType(Type):
 
     def __init__(self) -> None:
         super().__init__("Range")
+        self.items_type: Type = UnkownType()
         self.parent = ObjectType()
         self.methods = {
             "current": Method("current", [], NumberType()),

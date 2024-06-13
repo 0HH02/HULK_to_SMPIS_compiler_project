@@ -12,7 +12,7 @@ class IVisitor(ABC):
 
     @staticmethod
     @abstractmethod
-    def visit_node(node, context) -> bool:
+    def visit_node(node):
         """
         Abstract method for visiting a node in the AST.
 

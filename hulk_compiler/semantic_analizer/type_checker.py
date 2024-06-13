@@ -24,6 +24,7 @@ from ..parser.ast.ast import (
     NegativeNode,
     NotNode,
     Identifier,
+    ExpressionBlock,
     If,
     LetVar,
     Elif,
@@ -33,13 +34,17 @@ from ..parser.ast.ast import (
     FunctionCall,
     AttributeCall,
     DestructiveAssign,
+    Vector,
+    IndexNode,
     BinaryExpression,
     VariableDeclaration,
     Operator,
+    Program,
 )
 
 # pylint: disable=function-redefined
 # pylint: disable=line-too-long
+# pylint: disable=arguments-differ
 
 
 class TypeCheckVisitor(IVisitor):
@@ -49,7 +54,12 @@ class TypeCheckVisitor(IVisitor):
     """
 
     @staticmethod
-    @dispatch(LiteralNode)
+    @dispatch(Program)
+    def visit_node(node: Program, context: Context) -> bool:
+        return TypeCheckVisitor.visit_node(node.statement, context)
+
+    @staticmethod
+    @dispatch(LiteralNode, Context)
     def visit_node(node: LiteralNode, context: Context) -> bool:
 
         if node.token.token_type == TokenType.NUMBER_LITERAL:
@@ -62,19 +72,32 @@ class TypeCheckVisitor(IVisitor):
         return True
 
     @staticmethod
-    @dispatch(NegativeNode | PositiveNode)
+    @dispatch(NegativeNode | PositiveNode, Context)
     def visit_node(node: NegativeNode, context: Context) -> bool:
         TypeCheckVisitor.visit_node(node.expression, context)
         return isinstance(node.expression.inferred_type, NumberType)
 
     @staticmethod
-    @dispatch(NotNode)
+    @dispatch(NotNode, Context)
     def visit_node(node: NotNode, context: Context) -> bool:
         TypeCheckVisitor.visit_node(node.expression, context)
         return isinstance(node.expression.inferred_type, BooleanType)
 
     @staticmethod
-    @dispatch(While | Elif)
+    @dispatch(ExpressionBlock, Context)
+    def visit_node(node: ExpressionBlock, context: Context) -> bool:
+
+        for expression in node.body:
+            valid_expression: bool = TypeCheckVisitor.visit_node(expression, context)
+            if not valid_expression:
+                return False
+
+        node.inferred_type = node.body[-1].inferred_type
+
+        return True
+
+    @staticmethod
+    @dispatch(While | Elif, Context)
     def visit_node(node: While, context: Context) -> bool:
 
         TypeCheckVisitor.visit_node(node.condition, context)
@@ -87,7 +110,7 @@ class TypeCheckVisitor(IVisitor):
         return TypeCheckVisitor.visit_node(node.body, context)
 
     @staticmethod
-    @dispatch(If)
+    @dispatch(If, Context)
     def visit_node(node: If, context: Context) -> bool:
 
         TypeCheckVisitor.visit_node(node.condition, context)
@@ -111,7 +134,7 @@ class TypeCheckVisitor(IVisitor):
         return TypeCheckVisitor.visit_node(node.else_body, context)
 
     @staticmethod
-    @dispatch(For)
+    @dispatch(For, Context)
     def visit_node(node: For, context: Context) -> bool:
 
         TypeCheckVisitor.visit_node(node.iterable, context)
@@ -128,7 +151,45 @@ class TypeCheckVisitor(IVisitor):
         return TypeCheckVisitor.visit_node(node.body, new_context)
 
     @staticmethod
-    @dispatch(FunctionCall)
+    @dispatch(Vector, Context)
+    def visit_node(node: Vector, context: Context):
+
+        vector_type = None
+
+        for element in node.elements:
+            TypeCheckVisitor.visit_node(element, context)
+            if vector_type is None:
+                vector_type = element.inferred_type
+            else:
+                if vector_type != element.inferred_type:
+                    print(
+                        f"Can not implicitly convert from {element.inferred_type.name} to {vector_type.name}"
+                    )
+                    return False
+
+        node.inferred_type = RangeType()
+        return True
+
+    @staticmethod
+    @dispatch(IndexNode, Context)
+    def visit_node(node: IndexNode, context: Context):
+        TypeCheckVisitor.visit_node(node.obj, context)
+        TypeCheckVisitor.visit_node(node.index, context)
+
+        if not isinstance(node.obj.inferred_type, Vector):
+            print(f"Can not index {node.obj.inferred_type.name}")
+            return False
+
+        if not isinstance(node.index.inferred_type, NumberType):
+            print(f"Can not index with {node.index.inferred_type.name}")
+            return False
+
+        node.inferred_type = node.obj.items_type
+
+        return True
+
+    @staticmethod
+    @dispatch(FunctionCall, Context)
     def visit_node(node: FunctionCall, context: Context) -> bool:
 
         TypeCheckVisitor.visit_node(node.obj, context)
@@ -162,7 +223,7 @@ class TypeCheckVisitor(IVisitor):
         return True
 
     @staticmethod
-    @dispatch(Invocation)
+    @dispatch(Invocation, Context)
     def visit_node(node: Invocation, context: Context):
 
         if not context.check_method(node.identifier, node.arguments):
@@ -181,7 +242,7 @@ class TypeCheckVisitor(IVisitor):
         return True
 
     @staticmethod
-    @dispatch(AttributeCall)
+    @dispatch(AttributeCall, Context)
     def visit_node(node: AttributeCall, context: Context):
         TypeCheckVisitor.visit_node(node.obj, context)
 
@@ -200,7 +261,7 @@ class TypeCheckVisitor(IVisitor):
         return True
 
     @staticmethod
-    @dispatch(DestructiveAssign)
+    @dispatch(DestructiveAssign, Context)
     def visit_node(node: DestructiveAssign, context: Context):
         if not isinstance(node.identifier, (AttributeCall, Identifier)):
             print(
@@ -211,10 +272,10 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.identifier, context)
         TypeCheckVisitor.visit_node(node.expression, context)
 
-        return node.identifier.inferred_type == node.expression.inferred_type
+        return node.identifier.inferred_type.conforms_to(node.expression.inferred_type)
 
     @staticmethod
-    @dispatch(Identifier)
+    @dispatch(Identifier, Context)
     def visit_node(node: Identifier, context: Context) -> bool:
 
         if not context.check_var(node.identifier):
@@ -226,7 +287,7 @@ class TypeCheckVisitor(IVisitor):
         return True
 
     @staticmethod
-    @dispatch(LetVar)
+    @dispatch(LetVar, Context)
     def visit_node(node: LetVar, context: Context) -> bool:
         new_context = context.create_child_context()
         for var_declaration in node.declarations:
@@ -237,23 +298,23 @@ class TypeCheckVisitor(IVisitor):
                 raise InvalidDeclarationException(var_declaration.identifier)
 
             new_context.define_variable(
-                IdentifierVar(var_declaration.identifier, var_declaration.type)
+                IdentifierVar(var_declaration.identifier, var_declaration.static_type)
             )
 
         TypeCheckVisitor.visit_node(node.body, new_context)
 
     @staticmethod
-    @dispatch(VariableDeclaration)
+    @dispatch(VariableDeclaration, Context)
     def visit_node(node: VariableDeclaration, context: Context) -> bool:
         TypeCheckVisitor.visit_node(node.expression, context)
 
-        if node.type is not None:
-            if not context.check_type(node.type):
-                raise InvalidDeclarationException(node.type)
+        if node.static_type is not None:
+            if not context.check_type(node.static_type):
+                raise InvalidDeclarationException(node.static_type)
 
-            if not node.expression.inferred_type.conforms_to(node.type):
+            if not node.expression.inferred_type.conforms_to(node.static_type):
                 print(
-                    f"Can not implicitly convert from {node.expression.inferred_type.name} to {node.type}"
+                    f"Can not implicitly convert from {node.expression.inferred_type.name} to {node.static_type}"
                 )
                 return False
 
@@ -266,7 +327,7 @@ class TypeCheckVisitor(IVisitor):
         return True
 
     @staticmethod
-    @dispatch(BinaryExpression)
+    @dispatch(BinaryExpression, Context)
     def visit_node(node: BinaryExpression, context: Context) -> bool:
         if node.operator in [
             Operator.ADD,

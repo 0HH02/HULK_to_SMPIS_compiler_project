@@ -1,4 +1,3 @@
-import time
 from hulk_compiler.lexer.token import Token
 from hulk_compiler.parser.ast.ast import ASTNode
 from hulk_compiler.parser.grammar.hulk import get_hulk_grammar
@@ -30,7 +29,8 @@ def test_all() -> None:
             try:
                 tokens: list[Token] = lexer.tokenize(program)
                 ast: ASTNode = parser.parse(tokens)
-                # SASTPrinter.visit_node(ast)
+                print(f"AST for file: {file_path}")
+                ASTPrinter.visit_node(ast)
             except:
                 print(f"Error in file: {file_path}")
                 raise

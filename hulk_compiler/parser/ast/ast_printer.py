@@ -2,6 +2,7 @@
 This module contains the ASTPrinter class, which is used to print the AST
 """
 
+from ...core.i_visitor import IVisitor
 from multipledispatch import dispatch
 from .ast import (
     Program,
@@ -35,9 +36,10 @@ from .ast import (
 )
 
 # pylint: disable=function-redefined
+# pylint: disable=arguments-differ
 
 
-class ASTPrinter:
+class ASTPrinter(IVisitor):
     """
     A class that provides methods to print the Abstract Syntax Tree (AST) nodes
     using the visitor pattern.
@@ -234,7 +236,8 @@ class ASTPrinter:
             ASTPrinter.visit_node(arg, tabs + 1)
 
         print("   " * (tabs + 1), "return_type: ", node.return_type)
-        ASTPrinter.visit_node(node.body, tabs + 1)
+        if node.body:
+            ASTPrinter.visit_node(node.body, tabs + 1)
         print("   " * tabs, "}")
 
     @staticmethod
@@ -242,7 +245,7 @@ class ASTPrinter:
     def visit_node(node: AttributeDeclaration, tabs: int):
         print("   " * tabs, "atribute: {")
         print("   " * (tabs + 1), "identifier: ", node.identifier)
-        print("   " * (tabs + 1), "type: ", node.type)
+        print("   " * (tabs + 1), "type: ", node.static_type)
 
         ASTPrinter.visit_node(node.expression, tabs + 1)
         print("   " * tabs, "}")
@@ -276,7 +279,7 @@ class ASTPrinter:
         print("   " * tabs, "ComprehensionVector: {")
         ASTPrinter.visit_node(node.generator, tabs + 1)
         print("   " * (tabs + 1), "item: ", node.item.lex)
-        node.iterator()
+        ASTPrinter.visit_node(node.iterator, tabs + 1)
         print("   " * tabs, "}")
 
     @staticmethod
@@ -322,7 +325,7 @@ class ASTPrinter:
         """
         print("   " * tabs, "variable_declaration: {")
         print("   " * (tabs + 1), "identifier:", node.identifier)
-        print("   " * (tabs + 1), "type:", node.type)
+        print("   " * (tabs + 1), "type:", node.static_type)
         ASTPrinter.visit_node(node.expression, tabs + 1)
         print("   " * tabs, "}")
 
@@ -338,8 +341,7 @@ class ASTPrinter:
         """
         print("   " * tabs, "protoco_declaration: {")
         print("   " * (tabs + 1), "identifier: ", node.identifier)
-        for ext in node.extends:
-            ASTPrinter.visit_node(ext, tabs + 1)
+        print("   " * (tabs + 1), "extend: ", node.extends)
         for func in node.functions:
             ASTPrinter.visit_node(func, tabs + 1)
         print("   " * tabs, "}")

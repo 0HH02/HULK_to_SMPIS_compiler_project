@@ -1,6 +1,3 @@
-"""
-"""
-
 import time
 from hulk_compiler.lexer.token import Token
 from hulk_compiler.parser.ast.ast import ASTNode
