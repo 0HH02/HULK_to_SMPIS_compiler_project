@@ -10,6 +10,7 @@ from .types import (
     Method,
     RangeType,
     IdentifierVar,
+    Protocol,
 )
 from .semantic_exceptions import RedefineException, NotDeclaredVariableException
 
@@ -30,6 +31,19 @@ class Context:
             "Number": NumberType(),
             "String": StringType(),
         }
+        self.protocols: list[Protocol] = [
+            Protocol(
+                "Iterable",
+                [
+                    Method("next", [], BooleanType()),
+                    Method(
+                        "current",
+                        [],
+                        ObjectType(),
+                    ),
+                ],
+            ),
+        ]
         self.variables: set[IdentifierVar] = set()
         self.methods: list[Method] = [
             Method("sqrt", [IdentifierVar("value", NumberType())], NumberType()),
@@ -57,7 +71,7 @@ class Context:
         ]
         self.father: Context = father
 
-    def define_type(self, name: str):
+    def define_type(self, type_t: Type):
         """
         Defines a new type in the context.
 
@@ -67,12 +81,31 @@ class Context:
         Raises:
             RedefineException: If the type with the given name already exists in the context.
         """
-        if self.check_type(name):
-            raise RedefineException("Type", name)
-        self.types[name] = Type(name)
-        return self.types[name]
+        if self.check_type(type_t.name):
+            raise RedefineException("Type", type_t.name)
+        self.types[type_t.name] = type_t
 
-    def define_variable(self, name: str) -> None:
+    def define_protocol(self, name: str, methods: list[Method]):
+        """
+        Defines a new protocol in the context.
+
+        Args:
+            name (str): The name of the protocol to define.
+            methods (list[Method]): The list of methods the protocol should have.
+
+        Raises:
+            RedefineException: If the protocol with the given name already exists in the context.
+        """
+        if self.check_type(name):
+            raise RedefineException("Protocol", name)
+
+        new_protocol = Protocol(name)
+        for method in methods:
+            new_protocol.set_method(method)
+
+        self.protocols.append(new_protocol)
+
+    def define_variable(self, identifier: IdentifierVar) -> None:
         """
         Defines a variable in the context.
 
@@ -83,9 +116,9 @@ class Context:
             RedefineException: If the variable is already defined in the context.
         """
 
-        if self.check_var(name):
-            raise RedefineException("Variable", name)
-        self.variables.add(name)
+        if self.check_var(identifier.name):
+            raise RedefineException("Variable", identifier.name)
+        self.variables.add(identifier)
 
     def define_method(self, name: str, params: list[IdentifierVar], return_type):
         """
@@ -117,7 +150,7 @@ class Context:
             bool: True if the type exists, False otherwise.
         """
 
-        if name in self.types:
+        if name in self.types or name in self.protocols:
             return True
 
         if self.father:
@@ -125,7 +158,7 @@ class Context:
 
         return False
 
-    def check_var(self, name: str) -> bool:
+    def check_var(self, var: IdentifierVar) -> bool:
         """
         Check if a variable with the given name exists in the
         current context or any parent contexts.
@@ -137,11 +170,11 @@ class Context:
             bool: True if the variable exists, False otherwise.
         """
 
-        if name in self.variables:
+        if var in self.variables:
             return True
 
         if self.father:
-            return self.father.check_var(name)
+            return self.father.check_var(var)
 
         return False
 

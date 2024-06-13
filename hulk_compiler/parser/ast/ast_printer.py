@@ -2,6 +2,7 @@
 This module contains the ASTPrinter class, which is used to print the AST
 """
 
+from ...core.i_visitor import IVisitor
 from multipledispatch import dispatch
 from .ast import (
     Program,
@@ -35,9 +36,10 @@ from .ast import (
 )
 
 # pylint: disable=function-redefined
+# pylint: disable=arguments-differ
 
 
-class ASTPrinter:
+class ASTPrinter(IVisitor):
     """
     A class that provides methods to print the Abstract Syntax Tree (AST) nodes
     using the visitor pattern.
@@ -242,7 +244,7 @@ class ASTPrinter:
     def visit_node(node: AttributeDeclaration, tabs: int):
         print("   " * tabs, "atribute: {")
         print("   " * (tabs + 1), "identifier: ", node.identifier)
-        print("   " * (tabs + 1), "type: ", node.type)
+        print("   " * (tabs + 1), "type: ", node.static_type)
 
         ASTPrinter.visit_node(node.expression, tabs + 1)
         print("   " * tabs, "}")
@@ -322,7 +324,7 @@ class ASTPrinter:
         """
         print("   " * tabs, "variable_declaration: {")
         print("   " * (tabs + 1), "identifier:", node.identifier)
-        print("   " * (tabs + 1), "type:", node.type)
+        print("   " * (tabs + 1), "type:", node.static_type)
         ASTPrinter.visit_node(node.expression, tabs + 1)
         print("   " * tabs, "}")
 

@@ -88,7 +88,7 @@ class AttributeDeclaration(ASTNode):
 
     identifier: str
     expression: "Expression"
-    type: Type | None = None
+    static_type: Type = UnkownType()
 
 
 @dataclass
@@ -100,7 +100,7 @@ class FunctionDeclaration(DefineStatement):
     identifier: str
     params: list["Parameter"]
     body: "Expression"
-    return_type: Type | None = None
+    return_type: Type = UnkownType()
 
 
 @dataclass
@@ -110,7 +110,7 @@ class Parameter(ASTNode):
     """
 
     identifier: str
-    type: any = None
+    static_type: Type = UnkownType()
 
 
 @dataclass
@@ -141,7 +141,7 @@ class VariableDeclaration(Expression):
 
     identifier: str
     expression: Expression
-    type: Type | None = None
+    static_type: Type = UnkownType()
 
 
 @dataclass
@@ -277,6 +277,7 @@ class Vector(Expression):
     """
 
     elements: list["LiteralNode"]
+    elements_type: Type | None = None
 
 
 @dataclass
