@@ -48,9 +48,9 @@ class IdentifierVar:
         type: The type of the variable.
     """
 
-    def __init__(self, name: str, var_type) -> None:
+    def __init__(self, name: str, var_type: "Type") -> None:
         self.name = name
-        self.type = var_type
+        self.type: Type = var_type
 
     def __eq__(self, value: object) -> bool:
         return (
@@ -146,8 +146,11 @@ class Type:
 
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     def __hash__(self) -> int:
         return hash(self.name)
@@ -199,11 +202,11 @@ class ObjectType(Type):
     Represents an object type in the semantic analyzer.
     """
 
-    def __init__(self) -> None:
-        super().__init__("Object")
+    def __init__(self, name: str = "Object") -> None:
+        super().__init__(name)
 
 
-class NumberType(Type):
+class NumberType(ObjectType):
     """
     Represents a number type in the semantic analyzer.
     """
@@ -213,7 +216,7 @@ class NumberType(Type):
         self.parent = ObjectType()
 
 
-class StringType(Type):
+class StringType(ObjectType):
     """
     Represents a string type in the semantic analyzer.
     """
@@ -223,7 +226,7 @@ class StringType(Type):
         self.parent = ObjectType()
 
 
-class BooleanType(Type):
+class BooleanType(ObjectType):
     """
     Represents a boolean type in the semantic analyzer.
     """

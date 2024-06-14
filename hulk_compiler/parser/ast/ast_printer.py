@@ -215,7 +215,7 @@ class ASTPrinter(IVisitor):
     @staticmethod
     @dispatch(LiteralNode, int)
     def visit_node(node: LiteralNode, tabs: int):
-        print("   " * tabs, "literal: ", node.token.lex)
+        print("   " * tabs, "literal: ", node.value)
         print("   " * tabs, "infered_type: ", node.inferred_type)
 
     @staticmethod

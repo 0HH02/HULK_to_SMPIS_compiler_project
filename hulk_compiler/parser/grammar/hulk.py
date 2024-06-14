@@ -649,10 +649,10 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + expression
         + ~multiple_declaration,
         (
-            lambda s: [VariableDeclaration(s[1], s[4], s[2])] + s[5],
-            lambda s: [VariableDeclaration(s[1], s[4], s[2])],
-            lambda s: [VariableDeclaration(s[1], s[3])] + s[4],
-            lambda s: [VariableDeclaration(s[1], s[3])],
+            lambda s: [VariableDeclaration(s[1].lex, s[4], s[2])] + s[5],
+            lambda s: [VariableDeclaration(s[1].lex, s[4], s[2])],
+            lambda s: [VariableDeclaration(s[1].lex, s[3])] + s[4],
+            lambda s: [VariableDeclaration(s[1].lex, s[3])],
         ),
     )
 
@@ -716,7 +716,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         identifier + destructive_assignment_terminal + expression
         | member_access + destructive_assignment_terminal + expression,
         (
-            lambda s: DestructiveAssign(s[0], s[2]),
+            lambda s: DestructiveAssign(Identifier(s[0].lex), s[2]),
             lambda s: DestructiveAssign(s[0], s[2]),
         ),
     )
@@ -897,10 +897,10 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
     literal <= (
         number | string | true | false,
         (
-            lambda s: LiteralNode(s[0], NumberType()),
-            lambda s: LiteralNode(s[0], StringType()),
-            lambda s: LiteralNode(s[0], BooleanType()),
-            lambda s: LiteralNode(s[0], BooleanType()),
+            lambda s: LiteralNode(s[0].lex, NumberType()),
+            lambda s: LiteralNode(s[0].lex, StringType()),
+            lambda s: LiteralNode(s[0].lex, BooleanType()),
+            lambda s: LiteralNode(s[0].lex, BooleanType()),
         ),
     )
 

@@ -41,6 +41,8 @@ from ..parser.ast.ast import (
     Program,
 )
 
+from .hulk_transpiler import HulkTranspiler
+
 # pylint: disable=function-redefined
 # pylint: disable=line-too-long
 # pylint: disable=arguments-differ
@@ -224,7 +226,7 @@ class TypeCheckVisitor(IVisitor):
             return False
 
         for i, arg in enumerate(node.invocation.arguments):
-            if arg.inferred_type is not method.params[i]:
+            if arg.inferred_type.conforms_to(method.params[i].type):
                 print(
                     f"Can not implicitly convert from {arg.inferred_type.name} to {method.params[i].name}"
                 )
@@ -243,9 +245,15 @@ class TypeCheckVisitor(IVisitor):
         method = context.get_method(node.identifier, len(node.arguments))
 
         for i, arg in enumerate(node.arguments):
-            if arg.inferred_type is not method.params[i]:
+
+            TypeCheckVisitor.visit_node(arg, context)
+
+            print(arg.inferred_type)
+            print(method.params[i].type)
+
+            if not arg.inferred_type.conforms_to(method.params[i].type):
                 print(
-                    f"Can not implicitly convert from {arg.inferred_type.name} to {method.params[i].name}"
+                    f"Can not implicitly convert from {arg.inferred_type.name} to {method.params[i].type}"
                 )
                 return False
 
@@ -273,6 +281,7 @@ class TypeCheckVisitor(IVisitor):
     @staticmethod
     @dispatch(DestructiveAssign, Context)
     def visit_node(node: DestructiveAssign, context: Context):
+
         if not isinstance(node.identifier, (AttributeCall, Identifier)):
             print(
                 "Invalid Assignment , The left part of the assignment must be a variable or attribute"
@@ -299,6 +308,7 @@ class TypeCheckVisitor(IVisitor):
     @staticmethod
     @dispatch(LetVar, Context)
     def visit_node(node: LetVar, context: Context) -> bool:
+
         new_context = context.create_child_context()
         for var_declaration in node.declarations:
             valid_declaration: bool = TypeCheckVisitor.visit_node(
@@ -340,8 +350,6 @@ class TypeCheckVisitor(IVisitor):
     @staticmethod
     @dispatch(BinaryExpression, Context)
     def visit_node(node: BinaryExpression, context: Context) -> bool:
-        print(type(node.left))
-        print(type(node.right))
 
         if node.operator in [
             Operator.ADD,

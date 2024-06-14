@@ -204,7 +204,7 @@ class DestructiveAssign(Expression):
         self,
         identifier: Identifier | AttributeCall,
         expression: Expression,
-        inferred_type: Type,
+        inferred_type: Type = UnknownType(),
     ) -> None:
         self.identifier: Identifier | AttributeCall = identifier
         self.expression: Expression = expression
@@ -324,7 +324,7 @@ class ExpressionBlock(Expression):
     Represents an expression block node in the AST.
     """
 
-    def __init__(self, body: list[Expression], inferred_type: Type):
+    def __init__(self, body: list[Expression], inferred_type: Type = UnknownType()):
         self.body: list[Expression] = body
         super().__init__(inferred_type)
 

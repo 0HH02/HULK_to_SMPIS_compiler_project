@@ -62,7 +62,7 @@ class Context:
             ),
             Method("exp", [IdentifierVar("value", NumberType())], NumberType()),
             Method("rand", [], NumberType()),
-            Method("print", [IdentifierVar("message", ObjectType)], StringType()),
+            Method("print", [IdentifierVar("message", ObjectType())], StringType()),
             Method(
                 "range",
                 [
