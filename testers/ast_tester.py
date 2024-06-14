@@ -7,6 +7,9 @@ from hulk_compiler.lexer.hulk_token_patterns import TOKEN_PATTERNS
 from hulk_compiler.parser.ast.ast_printer import ASTPrinter
 from hulk_compiler.semantic_analizer.semantic_analizer import check_semantic
 import os
+from testers.semantic_analizer import AST1
+from hulk_compiler.code_generation.cil_generation.cil_generation import HULKToCILVisitor
+from hulk_compiler.code_generation.cil_generation.cil_nodes import PrintVisitor
 
 
 def test_all() -> None:
@@ -36,3 +39,8 @@ def test_all() -> None:
             except:
                 print(f"Error in file: {file_path}")
                 raise
+
+
+def hulk_to_CIL_test():
+    cil_ast = HULKToCILVisitor().visit_node(AST1)
+    PrintVisitor().visit_node(cil_ast)
