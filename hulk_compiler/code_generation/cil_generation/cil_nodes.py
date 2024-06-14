@@ -1,4 +1,9 @@
-import cmp.visitor as visitor
+from multipledispatch import dispatch
+from hulk_compiler.core.i_visitor import IVisitor
+
+# pylint: disable=function-redefined
+# pylint: disable=arguments-differ
+# pylint: disable=missing-class-docstring
 
 
 class Node:
@@ -181,87 +186,79 @@ class PrintNode(InstructionNode):
         self.str_addr = str_addr
 
 
-def get_formatter():
+class PrintVisitor(IVisitor):
 
-    class PrintVisitor(object):
-        @visitor.on("node")
-        def visit(self, node):
-            pass
+    @dispatch(ProgramNode)
+    def visit_node(self, node: ProgramNode):
+        dottypes = "\n".join(self.visit_node(t) for t in node.dottypes)
+        dotdata = "\n".join(self.visit_node(t) for t in node.dotdata)
+        dotcode = "\n".join(self.visit_node(t) for t in node.dotcode)
 
-        @visitor.when(ProgramNode)
-        def visit(self, node):
-            dottypes = "\n".join(self.visit(t) for t in node.dottypes)
-            dotdata = "\n".join(self.visit(t) for t in node.dotdata)
-            dotcode = "\n".join(self.visit(t) for t in node.dotcode)
+        return f".TYPES\n{dottypes}\n\n.DATA\n{dotdata}\n\n.CODE\n{dotcode}"
 
-            return f".TYPES\n{dottypes}\n\n.DATA\n{dotdata}\n\n.CODE\n{dotcode}"
+    @dispatch(TypeNode)
+    def visit_node(self, node: TypeNode):
+        attributes = "\n\t".join(f"attribute {x}" for x in node.attributes)
+        methods = "\n\t".join(f"method {x}: {y}" for x, y in node.methods)
 
-        @visitor.when(TypeNode)
-        def visit(self, node):
-            attributes = "\n\t".join(f"attribute {x}" for x in node.attributes)
-            methods = "\n\t".join(f"method {x}: {y}" for x, y in node.methods)
+        return f"type {node.name} {{\n\t{attributes}\n\n\t{methods}\n}}"
 
-            return f"type {node.name} {{\n\t{attributes}\n\n\t{methods}\n}}"
+    @dispatch(FunctionNode)
+    def visit_node(self, node: FunctionNode):
+        params = "\n\t".join(self.visit_node(x) for x in node.params)
+        localvars = "\n\t".join(self.visit_node(x) for x in node.localvars)
+        instructions = "\n\t".join(self.visit_node(x) for x in node.instructions)
 
-        @visitor.when(FunctionNode)
-        def visit(self, node):
-            params = "\n\t".join(self.visit(x) for x in node.params)
-            localvars = "\n\t".join(self.visit(x) for x in node.localvars)
-            instructions = "\n\t".join(self.visit(x) for x in node.instructions)
+        return f"function {node.name} {{\n\t{params}\n\n\t{localvars}\n\n\t{instructions}\n}}"
 
-            return f"function {node.name} {{\n\t{params}\n\n\t{localvars}\n\n\t{instructions}\n}}"
+    @dispatch(ParamNode)
+    def visit_node(self, node: ParamNode):
+        return f"PARAM {node.name}"
 
-        @visitor.when(ParamNode)
-        def visit(self, node):
-            return f"PARAM {node.name}"
+    @dispatch(LocalNode)
+    def visit_node(self, node: LocalNode):
+        return f"LOCAL {node.name}"
 
-        @visitor.when(LocalNode)
-        def visit(self, node):
-            return f"LOCAL {node.name}"
+    @dispatch(AssignNode)
+    def visit_node(self, node: AssignNode):
+        return f"{node.dest} = {node.source}"
 
-        @visitor.when(AssignNode)
-        def visit(self, node):
-            return f"{node.dest} = {node.source}"
+    @dispatch(PlusNode)
+    def visit_node(self, node: PlusNode):
+        return f"{node.dest} = {node.left} + {node.right}"
 
-        @visitor.when(PlusNode)
-        def visit(self, node):
-            return f"{node.dest} = {node.left} + {node.right}"
+    @dispatch(MinusNode)
+    def visit_node(self, node: MinusNode):
+        return f"{node.dest} = {node.left} - {node.right}"
 
-        @visitor.when(MinusNode)
-        def visit(self, node):
-            return f"{node.dest} = {node.left} - {node.right}"
+    @dispatch(StarNode)
+    def visit_node(self, node: StarNode):
+        return f"{node.dest} = {node.left} * {node.right}"
 
-        @visitor.when(StarNode)
-        def visit(self, node):
-            return f"{node.dest} = {node.left} * {node.right}"
+    @dispatch(DivNode)
+    def visit_node(self, node: DivNode):
+        return f"{node.dest} = {node.left} / {node.right}"
 
-        @visitor.when(DivNode)
-        def visit(self, node):
-            return f"{node.dest} = {node.left} / {node.right}"
+    @dispatch(AllocateNode)
+    def visit_node(self, node: AllocateNode):
+        return f"{node.dest} = ALLOCATE {node.type}"
 
-        @visitor.when(AllocateNode)
-        def visit(self, node):
-            return f"{node.dest} = ALLOCATE {node.type}"
+    @dispatch(TypeOfNode)
+    def visit_node(self, node: TypeOfNode):
+        return f"{node.dest} = TYPEOF {node.type}"
 
-        @visitor.when(TypeOfNode)
-        def visit(self, node):
-            return f"{node.dest} = TYPEOF {node.type}"
+    @dispatch(StaticCallNode)
+    def visit_node(self, node: StaticCallNode):
+        return f"{node.dest} = CALL {node.function}"
 
-        @visitor.when(StaticCallNode)
-        def visit(self, node):
-            return f"{node.dest} = CALL {node.function}"
+    @dispatch(DynamicCallNode)
+    def visit_node(self, node: DynamicCallNode):
+        return f"{node.dest} = VCALL {node.type} {node.method}"
 
-        @visitor.when(DynamicCallNode)
-        def visit(self, node):
-            return f"{node.dest} = VCALL {node.type} {node.method}"
+    @dispatch(ArgNode)
+    def visit_node(self, node: ArgNode):
+        return f"ARG {node.name}"
 
-        @visitor.when(ArgNode)
-        def visit(self, node):
-            return f"ARG {node.name}"
-
-        @visitor.when(ReturnNode)
-        def visit(self, node):
-            return f'RETURN {node.value if node.value is not None else ""}'
-
-    printer = PrintVisitor()
-    return lambda ast: printer.visit(ast)
+    @dispatch(ReturnNode)
+    def visit_node(self, node: ReturnNode):
+        return f'RETURN {node.value if node.value is not None else ""}'

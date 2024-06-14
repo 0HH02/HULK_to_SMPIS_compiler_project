@@ -7,6 +7,9 @@ from hulk_compiler.lexer.lexer import Lexer
 from hulk_compiler.lexer.hulk_token_patterns import TOKEN_PATTERNS
 from hulk_compiler.parser.ast.ast_printer import ASTPrinter
 from testers.ast_tester import test_all
+from testers.ast_tester import hulk_to_CIL_test
 
 
-test_all()
+# test_all()
+
+hulk_to_CIL_test()
