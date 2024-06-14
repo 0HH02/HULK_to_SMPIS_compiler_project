@@ -25,7 +25,7 @@ from hulk_compiler.parser.ast.ast import (
     Identifier,
 )
 
-from hulk_compiler.lexer.token import Token, TokenType
+from hulk_compiler.semantic_analizer.types import NumberType, StringType
 from hulk_compiler.semantic_analizer.types import Type
 
 
@@ -35,12 +35,9 @@ AST1 = Program(
     [
         LetVar(
             [
-                VariableDeclaration(
-                    Token("x", TokenType.IDENTIFIER, 0, 5),
-                    LiteralNode(Token("8", TokenType.NUMBER_LITERAL, 0, 8)),
-                )
+                VariableDeclaration("x", LiteralNode("8", NumberType())),
             ],
-            LiteralNode(Token("2", TokenType.NUMBER_LITERAL, 0, 10)),
+            LiteralNode("2", NumberType()),
         )
     ],
 )
@@ -105,12 +102,8 @@ AST3 = Program(
             [],
             None,
             [
-                AttributeDeclaration(
-                    "ruedas", LiteralNode(Token("4", TokenType.NUMBER, 0, 0))
-                ),
-                AttributeDeclaration(
-                    "color", LiteralNode(Token("rojo", TokenType.STRING, 0, 0))
-                ),
+                AttributeDeclaration("ruedas", LiteralNode("4", NumberType())),
+                AttributeDeclaration("color", LiteralNode("rojo", NumberType())),
             ],
             [],
         ),
@@ -119,12 +112,8 @@ AST3 = Program(
             [],
             None,
             [
-                AttributeDeclaration(
-                    "fuerza", LiteralNode(Token("5", TokenType.NUMBER, 0, 0))
-                ),
-                AttributeDeclaration(
-                    "ojos", LiteralNode(Token("café", TokenType.STRING, 0, 0))
-                ),
+                AttributeDeclaration("fuerza", LiteralNode("5", NumberType())),
+                AttributeDeclaration("ojos", LiteralNode("café", StringType())),
             ],
             [
                 FunctionDeclaration(

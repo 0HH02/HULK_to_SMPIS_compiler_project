@@ -279,7 +279,7 @@ class ASTPrinter(IVisitor):
         """
         print("   " * tabs, "ComprehensionVector: {")
         ASTPrinter.visit_node(node.generator, tabs + 1)
-        print("   " * (tabs + 1), "item: ", node.item.lex)
+        print("   " * (tabs + 1), "item: ", node.identifier)
         ASTPrinter.visit_node(node.iterator, tabs + 1)
         print("   " * tabs, "}")
 
@@ -310,7 +310,7 @@ class ASTPrinter(IVisitor):
             tabs (int): The number of tabs for indentation.
         """
         print("   " * tabs, "destructive_assigment: {")
-        print("   " * (tabs + 1), "identifier", node.identifier)
+        print("   " * (tabs + 1), "identifier", node.identifier.identifier)
         ASTPrinter.visit_node(node.expression, tabs + 1)
         print("   " * tabs, "}")
 

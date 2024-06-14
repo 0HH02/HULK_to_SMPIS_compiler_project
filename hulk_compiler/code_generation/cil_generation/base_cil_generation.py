@@ -1,4 +1,4 @@
-import cil_nodes as cil
+from .cil_nodes import *
 from hulk_compiler.semantic_analizer.types import IdentifierVar
 
 
@@ -28,7 +28,7 @@ class BaseHULKToCILVisitor:
         vinfo.name = (
             f"local_{self.current_function.name[9:]}_{vinfo.name}_{len(self.localvars)}"
         )
-        local_node = cil.LocalNode(vinfo.name)
+        local_node = LocalNode(vinfo.name)
         self.localvars.append(local_node)
         return vinfo.name
 
@@ -44,17 +44,17 @@ class BaseHULKToCILVisitor:
         return f"function_{method_name}_at_{type_name}"
 
     def register_function(self, function_name: str):
-        function_node = cil.FunctionNode(function_name, [], [], [])
+        function_node = FunctionNode(function_name, [], [], [])
         self.dotcode.append(function_node)
         return function_node
 
     def register_type(self, name: str):
-        type_node = cil.TypeNode(name)
+        type_node = TypeNode(name)
         self.dottypes.append(type_node)
         return type_node
 
     def register_data(self, value):
         vname = f"data_{len(self.dotdata)}"
-        data_node = cil.DataNode(vname, value)
+        data_node = DataNode(vname, value)
         self.dotdata.append(data_node)
         return data_node

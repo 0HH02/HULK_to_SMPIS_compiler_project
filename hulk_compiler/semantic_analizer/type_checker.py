@@ -7,6 +7,8 @@ from .semantic_exceptions import (
     InferTypeException,
     InvalidDeclarationException,
 )
+from .hulk_transpiler import HulkTranspiler
+
 from .context import Context
 from .types import (
     StringType,
@@ -41,7 +43,6 @@ from ..parser.ast.ast import (
     Program,
 )
 
-from .hulk_transpiler import HulkTranspiler
 
 # pylint: disable=function-redefined
 # pylint: disable=line-too-long
@@ -308,7 +309,7 @@ class TypeCheckVisitor(IVisitor):
     @staticmethod
     @dispatch(LetVar, Context)
     def visit_node(node: LetVar, context: Context) -> bool:
-
+        HulkTranspiler.visit_node(node)
         new_context = context.create_child_context()
         for var_declaration in node.declarations:
             valid_declaration: bool = TypeCheckVisitor.visit_node(

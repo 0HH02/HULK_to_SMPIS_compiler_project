@@ -119,7 +119,7 @@ class Context:
             RedefineException: If the variable is already defined in the context.
         """
 
-        if self.check_var(identifier.name):
+        if identifier.name in self.variables:
             raise RedefineException("Variable", identifier.name)
 
         self.variables.append(identifier)
@@ -227,6 +227,10 @@ class Context:
         try:
             return next(var.type for var in self.variables if var.name == name)
         except StopIteration as e:
+
+            if self.father:
+                return self.father.get_var_type(name)
+
             raise NotDeclaredVariableException(name) from e
 
     def get_method(self, name: str, params: int):

@@ -1,6 +1,6 @@
-import cil_nodes as cil
 from multipledispatch import dispatch
-from base_cil_generation import BaseHULKToCILVisitor
+from .cil_nodes import *
+from .base_cil_generation import BaseHULKToCILVisitor
 from hulk_compiler.semantic_analizer.context import Context
 from hulk_compiler.parser.ast.ast import (
     Program,
@@ -52,16 +52,16 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         instance = self.define_internal_local()
         result = self.define_internal_local()
         main_method_name = self.to_function_name("main", "Main")
-        self.register_instruction(cil.AllocateNode("Main", instance))
-        self.register_instruction(cil.ArgNode(instance))
-        self.register_instruction(cil.StaticCallNode(main_method_name, result))
-        self.register_instruction(cil.ReturnNode(0))
+        self.register_instruction(AllocateNode("Main", instance))
+        self.register_instruction(ArgNode(instance))
+        self.register_instruction(StaticCallNode(main_method_name, result))
+        self.register_instruction(ReturnNode(0))
         self.current_function = None
 
         for define in node.defines:
             self.visit_node(define)
 
-        return cil.ProgramNode(self.dottypes, self.dotdata, self.dotcode)
+        return ProgramNode(self.dottypes, self.dotdata, self.dotcode)
 
     @dispatch(TypeDeclaration)
     def visit_node(self, node: TypeDeclaration):
@@ -121,10 +121,10 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         instance = self.define_internal_local()
         result = self.define_internal_local()
         main_method_name = self.to_function_name("main", "Main")
-        self.register_instruction(cil.AllocateNode("Main", instance))
-        self.register_instruction(cil.ArgNode(instance))
-        self.register_instruction(cil.StaticCallNode(main_method_name, result))
-        self.register_instruction(cil.ReturnNode(0))
+        self.register_instruction(AllocateNode("Main", instance))
+        self.register_instruction(ArgNode(instance))
+        self.register_instruction(StaticCallNode(main_method_name, result))
+        self.register_instruction(ReturnNode(0))
         self.current_function = None
 
         for var in node.declarations:

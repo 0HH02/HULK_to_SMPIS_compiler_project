@@ -325,7 +325,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + close_brace,
         (
             lambda s: TypeDeclaration(
-                identifier=s[1],
+                identifier=s[1].lex,
                 params=s[2],
                 inherits=s[3],
                 attributes=[
@@ -429,8 +429,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
     attribute_definition <= (
         identifier + ~type_declaration + assignment_terminal + expression + semicolon,
         (
-            lambda s: AttributeDeclaration(s[0], s[3], s[1]),
-            lambda s: AttributeDeclaration(s[0], s[2]),
+            lambda s: AttributeDeclaration(s[0].lex, s[3], s[1]),
+            lambda s: AttributeDeclaration(s[0].lex, s[2]),
         ),
     )
     type_arguments <= (
@@ -441,8 +441,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
     type_inherits <= (
         inherits + identifier + ~inherits_declaration,
         (
-            lambda s: Inherits(s[1], s[2]),
-            lambda s: Inherits(s[1], []),
+            lambda s: Inherits(s[1].lex, s[2]),
+            lambda s: Inherits(s[1].lex, []),
         ),
     )
 
@@ -451,7 +451,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         | colon + number_type
         | colon + string_type
         | colon + boolean_type,
-        (lambda s: s[1]),
+        (lambda s: s[1].lex),
     )
 
     inherits_declaration <= (
@@ -473,10 +473,10 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + inline
         + statement,
         (
-            lambda s: FunctionDeclaration(s[0], s[2], s[6], s[4]),
-            lambda s: FunctionDeclaration(s[0], s[2], s[5]),
-            lambda s: FunctionDeclaration(s[0], [], s[5], s[3]),
-            lambda s: FunctionDeclaration(s[0], [], s[4]),
+            lambda s: FunctionDeclaration(s[0].lex, s[2], s[6], s[4]),
+            lambda s: FunctionDeclaration(s[0].lex, s[2], s[5]),
+            lambda s: FunctionDeclaration(s[0].lex, [], s[5], s[3]),
+            lambda s: FunctionDeclaration(s[0].lex, [], s[4]),
         ),
     )
 
@@ -488,20 +488,20 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + ~type_declaration
         + expression_block,
         (
-            lambda s: FunctionDeclaration(s[0], s[2], s[5], s[4]),
-            lambda s: FunctionDeclaration(s[0], s[2], s[4]),
-            lambda s: FunctionDeclaration(s[0], [], s[4], s[3]),
-            lambda s: FunctionDeclaration(s[0], [], s[3], []),
+            lambda s: FunctionDeclaration(s[0].lex, s[2], s[5], s[4]),
+            lambda s: FunctionDeclaration(s[0].lex, s[2], s[4]),
+            lambda s: FunctionDeclaration(s[0].lex, [], s[4], s[3]),
+            lambda s: FunctionDeclaration(s[0].lex, [], s[3], []),
         ),
     )
 
     argument_list_definition <= (
         ~(argument_list_definition + comma) + identifier + ~type_declaration,
         (
-            lambda s: s[0] + [Parameter(s[2], s[3])],
-            lambda s: s[0] + [Parameter(s[2])],
-            lambda s: [Parameter(s[0], s[1])],
-            lambda s: [Parameter(s[0])],
+            lambda s: s[0] + [Parameter(s[2].lex, s[3])],
+            lambda s: s[0] + [Parameter(s[2].lex)],
+            lambda s: [Parameter(s[0].lex, s[1])],
+            lambda s: [Parameter(s[0].lex)],
         ),
     )
 
@@ -513,18 +513,18 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + ~protocol_body
         + close_brace,
         (
-            lambda s: ProtocolDeclaration(s[1], s[2], s[4]),
-            lambda s: ProtocolDeclaration(s[1], s[2], []),
-            lambda s: ProtocolDeclaration(s[1], [], s[3]),
-            lambda s: ProtocolDeclaration(s[1], [], []),
+            lambda s: ProtocolDeclaration(s[1].lex, s[2], s[4]),
+            lambda s: ProtocolDeclaration(s[1].lex, s[2], []),
+            lambda s: ProtocolDeclaration(s[1].lex, [], s[3]),
+            lambda s: ProtocolDeclaration(s[1].lex, [], []),
         ),
     )
 
     extends_definition <= (
         extends + identifier + ~extends_multiple_identifier,
         (
-            lambda s: [s[1]] + s[2],
-            lambda s: [s[1]],
+            lambda s: [s[1].lex] + s[2],
+            lambda s: [s[1].lex],
         ),
     )
     extends_multiple_identifier <= (
@@ -541,26 +541,26 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + type_declaration
         + semicolon,
         (
-            lambda s: s[0] + [FunctionDeclaration(s[1], s[3], None, s[5])],
-            lambda s: s[0] + [FunctionDeclaration(s[1], [], None, s[4])],
-            lambda s: [FunctionDeclaration(s[0], s[2], None, s[4])],
-            lambda s: [FunctionDeclaration(s[0], [], None, s[3])],
+            lambda s: s[0] + [FunctionDeclaration(s[1].lex, s[3], None, s[5])],
+            lambda s: s[0] + [FunctionDeclaration(s[1].lex, [], None, s[4])],
+            lambda s: [FunctionDeclaration(s[0].lex, s[2], None, s[4])],
+            lambda s: [FunctionDeclaration(s[0].lex, [], None, s[3])],
         ),
     )
 
     protocol_arguments_definition <= (
         identifier + type_declaration + ~protocol_multiple_arguments_definition,
         (
-            lambda s: [Parameter(s[0], s[1])] + s[2],
-            lambda s: [Parameter(s[0], s[1])],
+            lambda s: [Parameter(s[0].lex, s[1])] + s[2],
+            lambda s: [Parameter(s[0].lex, s[1])],
         ),
     )
 
     protocol_multiple_arguments_definition <= (
         comma + identifier + type_declaration + ~protocol_multiple_arguments_definition,
         (
-            lambda s: [Parameter(s[1], s[2])] + s[3],
-            lambda s: [Parameter(s[1], s[2])],
+            lambda s: [Parameter(s[1].lex, s[2])] + s[3],
+            lambda s: [Parameter(s[1].lex, s[2])],
         ),
     )
 

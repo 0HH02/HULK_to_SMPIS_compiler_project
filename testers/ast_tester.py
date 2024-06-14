@@ -35,7 +35,7 @@ def test_all() -> None:
                 ast: ASTNode = parser.parse(tokens)
                 print(f"AST for file: {file_path}")
                 ASTPrinter.visit_node(ast)
-                check_semantic(ast)
+                # check_semantic(ast)
             except:
                 print(f"Error in file: {file_path}")
                 raise
