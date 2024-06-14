@@ -6,6 +6,7 @@ from .types import (
     ObjectType,
     BooleanType,
     NumberType,
+    UnknownType,
     Type,
     Method,
     RangeType,
@@ -26,10 +27,12 @@ class Context:
             father (Context, optional): The parent context. Defaults to None.
         """
         self.types: dict[str, Type] = {
+            "Unknown": UnknownType(),
             "Object": ObjectType(),
             "Boolean": BooleanType(),
             "Number": NumberType(),
             "String": StringType(),
+            "Range": RangeType(),
         }
         self.protocols: list[Protocol] = [
             Protocol(
@@ -44,7 +47,7 @@ class Context:
                 ],
             ),
         ]
-        self.variables: set[IdentifierVar] = set()
+        self.variables: list[IdentifierVar] = []
         self.methods: list[Method] = [
             Method("sqrt", [IdentifierVar("value", NumberType())], NumberType()),
             Method("sin", [IdentifierVar("angle", NumberType())], NumberType()),
@@ -59,7 +62,7 @@ class Context:
             ),
             Method("exp", [IdentifierVar("value", NumberType())], NumberType()),
             Method("rand", [], NumberType()),
-            Method("print", [IdentifierVar("message", StringType)], StringType()),
+            Method("print", [IdentifierVar("message", ObjectType)], StringType()),
             Method(
                 "range",
                 [
@@ -118,7 +121,8 @@ class Context:
 
         if self.check_var(identifier.name):
             raise RedefineException("Variable", identifier.name)
-        self.variables.add(identifier)
+
+        self.variables.append(identifier)
 
     def define_method(self, name: str, params: list[IdentifierVar], return_type):
         """
@@ -158,7 +162,7 @@ class Context:
 
         return False
 
-    def check_var(self, var: IdentifierVar) -> bool:
+    def check_var(self, var_name: str) -> bool:
         """
         Check if a variable with the given name exists in the
         current context or any parent contexts.
@@ -170,11 +174,11 @@ class Context:
             bool: True if the variable exists, False otherwise.
         """
 
-        if var in self.variables:
+        if var_name in [var.name for var in self.variables]:
             return True
 
         if self.father:
-            return self.father.check_var(var)
+            return self.father.check_var(var_name)
 
         return False
 
@@ -221,7 +225,7 @@ class Context:
             The type with the given name.
         """
         try:
-            return next([var for var in self.variables if var.name == name])
+            return next(var.type for var in self.variables if var.name == name)
         except StopIteration as e:
             raise NotDeclaredVariableException(name) from e
 

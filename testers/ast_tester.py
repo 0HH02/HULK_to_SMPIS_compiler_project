@@ -5,6 +5,7 @@ from hulk_compiler.parser.parser_lr1 import ParserLR1
 from hulk_compiler.lexer.lexer import Lexer
 from hulk_compiler.lexer.hulk_token_patterns import TOKEN_PATTERNS
 from hulk_compiler.parser.ast.ast_printer import ASTPrinter
+from hulk_compiler.semantic_analizer.semantic_analizer import check_semantic
 import os
 
 
@@ -31,6 +32,7 @@ def test_all() -> None:
                 ast: ASTNode = parser.parse(tokens)
                 print(f"AST for file: {file_path}")
                 ASTPrinter.visit_node(ast)
+                check_semantic(ast)
             except:
                 print(f"Error in file: {file_path}")
                 raise
