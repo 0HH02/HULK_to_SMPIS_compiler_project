@@ -115,7 +115,9 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         # node.expr -> ExpressionNode
         ###############################
 
-        self.current_function = self.register_function(f"function_{len(self.dotcode)}")
+        self.current_function = self.register_function(
+            f"function_let_{len(self.dotcode)}"
+        )
         instance = self.define_internal_local()
         result = self.define_internal_local()
         main_method_name = self.to_function_name("main", "Main")
@@ -128,8 +130,6 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         for var in node.declarations:
             self.visit_node(var.expression)
             self.define_internal_local()
-
-        pass
 
     @dispatch(FunctionCall)
     def visit_node(self, node):

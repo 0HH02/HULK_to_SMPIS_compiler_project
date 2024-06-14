@@ -34,6 +34,7 @@ from hulk_compiler.parser.ast.ast import (
     ExpressionBlock,
 )
 from .grammar import Grammar, Symbol
+from ...semantic_analizer.types import NumberType, StringType, BooleanType
 from ...lexer.token import TokenType
 
 # pylint: disable=expression-not-assigned
@@ -633,10 +634,10 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + ~multiple_declaration
         + in_terminal,
         (
-            lambda s: [VariableDeclaration(s[1], s[4], s[2])] + s[5],
-            lambda s: [VariableDeclaration(s[1], s[4], s[2])],
-            lambda s: [VariableDeclaration(s[1], s[3])] + s[4],
-            lambda s: [VariableDeclaration(s[1], s[3])],
+            lambda s: [VariableDeclaration(s[1].lex, s[4], s[2])] + s[5],
+            lambda s: [VariableDeclaration(s[1].lex, s[4], s[2])],
+            lambda s: [VariableDeclaration(s[1].lex, s[3])] + s[4],
+            lambda s: [VariableDeclaration(s[1].lex, s[3])],
         ),
     )
 
@@ -840,7 +841,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
 
     invocation_expression <= (
         identifier + open_parenthesis + ~argument_list + close_parenthesis,
-        (lambda s: Invocation(s[0], s[2]), lambda s: Invocation(s[0], [])),
+        (lambda s: Invocation(s[0].lex, s[2]), lambda s: Invocation(s[0].lex, [])),
     )
 
     argument_list <= (
@@ -893,7 +894,15 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         (lambda s: Instanciate(s[1].identifier, s[1].arguments)),
     )
 
-    literal <= (number | string | true | false, (lambda s: LiteralNode(s[0])))
+    literal <= (
+        number | string | true | false,
+        (
+            lambda s: LiteralNode(s[0], NumberType()),
+            lambda s: LiteralNode(s[0], StringType()),
+            lambda s: LiteralNode(s[0], BooleanType()),
+            lambda s: LiteralNode(s[0], BooleanType()),
+        ),
+    )
 
     mapping: dict[TokenType, Symbol] = {
         TokenType.NUMBER_LITERAL: number,

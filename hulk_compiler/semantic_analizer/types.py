@@ -65,6 +65,9 @@ class IdentifierVar:
     def __repr__(self) -> str:
         return self.__str__()
 
+    def __hash__(self) -> int:
+        return hash(self.name)
+
 
 class Type:
     """
@@ -145,6 +148,9 @@ class Type:
 
     def __str__(self):
         return self.name
+
+    def __hash__(self) -> int:
+        return hash(self.name)
 
 
 class Protocol:
@@ -243,7 +249,7 @@ class RangeType(Type):
 
     def __init__(self) -> None:
         super().__init__("Range")
-        self.items_type: Type = UnkownType()
+        self.items_type: Type = UnknownType()
         self.parent = ObjectType()
         self.methods = {
             "current": Method("current", [], NumberType()),
@@ -260,11 +266,11 @@ class RangeType(Type):
         }
 
 
-class UnkownType(Type):
+class UnknownType(Type):
     """
     Represents an unknown type in the semantic analyzer.
     """
 
     def __init__(self) -> None:
-        super().__init__("Uknown")
+        super().__init__("Unknown")
         self.parent = ObjectType()
