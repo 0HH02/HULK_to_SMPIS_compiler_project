@@ -16,6 +16,7 @@ from .types import (
 from .semantic_exceptions import RedefineException, NotDeclaredVariableException
 
 
+# TODO resolve the create child context because we are duplicating so much data
 class Context:
     def __init__(self, father: "Context" = None) -> None:
         """
@@ -84,7 +85,7 @@ class Context:
         Raises:
             RedefineException: If the type with the given name already exists in the context.
         """
-        if self.check_type(type_t.name):
+        if self.get_type(type_t.name) is not None:
             raise RedefineException("Type", type_t.name)
         self.types[type_t.name] = type_t
 
@@ -99,7 +100,7 @@ class Context:
         Raises:
             RedefineException: If the protocol with the given name already exists in the context.
         """
-        if self.check_type(name):
+        if self.get_protocol(name) is not None:
             raise RedefineException("Protocol", name)
 
         new_protocol = Protocol(name)
@@ -108,7 +109,7 @@ class Context:
 
         self.protocols.append(new_protocol)
 
-    def define_variable(self, identifier: IdentifierVar) -> None:
+    def define_variable(self, var: IdentifierVar) -> None:
         """
         Defines a variable in the context.
 
@@ -119,10 +120,10 @@ class Context:
             RedefineException: If the variable is already defined in the context.
         """
 
-        if identifier.name in self.variables:
-            raise RedefineException("Variable", identifier.name)
+        if var.name in self.variables:
+            raise RedefineException("Variable", var.name)
 
-        self.variables.append(identifier)
+        self.variables.append(var)
 
     def define_method(self, name: str, params: list[IdentifierVar], return_type):
         """
@@ -138,83 +139,12 @@ class Context:
             of parameters already exists.
         """
 
-        if self.check_method(name, len(params)):
+        if self.get_method(name, len(params)) is not None:
             raise RedefineException("Method", name)
 
         self.methods.append(Method(name, params, return_type))
 
-    def check_type(self, name: str) -> bool:
-        """
-        Check if a type with the given name exists in the current context or any parent contexts.
-
-        Args:
-            name (str): The name of the type to check.
-
-        Returns:
-            bool: True if the type exists, False otherwise.
-        """
-
-        if name in self.types or name in self.protocols:
-            return True
-
-        if self.father:
-            return self.father.check_type(name)
-
-        return False
-
-    def check_var(self, var_name: str) -> bool:
-        """
-        Check if a variable with the given name exists in the
-        current context or any parent contexts.
-
-        Args:
-            name (str): The name of the variable to check.
-
-        Returns:
-            bool: True if the variable exists, False otherwise.
-        """
-
-        if var_name in [var.name for var in self.variables]:
-            return True
-
-        if self.father:
-            return self.father.check_var(var_name)
-
-        return False
-
-    def check_method(self, name: str, params: int):
-        """
-        Check if a method with the given name and number of parameters
-        exists in the current context.
-
-        Args:
-            name (str): The name of the method to check.
-            params (int): The number of parameters the method should have.
-
-        Returns:
-            bool: True if a method with the given name and number
-            of parameters exists, False otherwise.
-        """
-
-        for method in self.methods:
-            if method.name == name and len(method.params) == params:
-                return True
-
-        if self.father:
-            return self.father.check_method(name, params)
-
-        return False
-
-    def create_child_context(self) -> "Context":
-        """
-        Creates a new child context based on the current context.
-
-        Returns:
-            A new instance of the Context class, representing the child context.
-        """
-        return Context(self)
-
-    def get_var_type(self, name: str) -> Type:
+    def get_var_type(self, name: str) -> Type | None:
         """
         Retrieves a type from the context.
 
@@ -226,14 +156,14 @@ class Context:
         """
         try:
             return next(var.type for var in self.variables if var.name == name)
-        except StopIteration as e:
+        except StopIteration:
 
             if self.father:
                 return self.father.get_var_type(name)
 
-            raise NotDeclaredVariableException(name) from e
+            return None
 
-    def get_method(self, name: str, params: int):
+    def get_method(self, name: str, params: int) -> Method | None:
         """
         Retrieves a method from the context.
 
@@ -251,7 +181,50 @@ class Context:
         if self.father:
             return self.father.get_method(name, params)
 
-        raise NotDeclaredVariableException(name)
+        return None
+
+    def get_type(self, name: str) -> Type | None:
+        """
+        Retrieves a type from the context.
+
+        Args:
+            name (str): The name of the type to retrieve.
+
+        Returns:
+            The type with the given name.
+        """
+        try:
+            return self.types[name]
+        except KeyError:
+            if self.father:
+                return self.father.get_type(name)
+            return None
+
+    def get_protocol(self, name: str) -> Protocol | None:
+        """
+        Retrieves a protocol from the context.
+        Args:
+            name (str): The name of the protocol to retrieve.
+        Returns:
+            The protocol with the given name.
+        """
+        try:
+            return next(
+                protocol for protocol in self.protocols if protocol.name == name
+            )
+        except StopIteration:
+            if self.father:
+                return self.father.get_protocol(name)
+            return None
+
+    def create_child_context(self) -> "Context":
+        """
+        Creates a new child context based on the current context.
+
+        Returns:
+            A new instance of the Context class, representing the child context.
+        """
+        return Context(self)
 
     def __str__(self):
         return (

@@ -3,10 +3,9 @@
 """
 
 from multipledispatch import dispatch
-from .semantic_exceptions import (
-    InferTypeException,
-    InvalidDeclarationException,
-)
+
+from hulk_compiler.semantic_analizer.types import Type
+
 from .hulk_transpiler import HulkTranspiler
 
 from .context import Context
@@ -17,6 +16,7 @@ from .types import (
     RangeType,
     IdentifierVar,
     UnknownType,
+    Method,
 )
 from ..core.i_visitor import IVisitor
 from ..parser.ast.ast import (
@@ -28,6 +28,7 @@ from ..parser.ast.ast import (
     ExpressionBlock,
     If,
     LetVar,
+    Instanciate,
     Elif,
     While,
     For,
@@ -158,8 +159,12 @@ class TypeCheckVisitor(IVisitor):
             )
             return False
 
+        node.index_identifier_type = node.iterable.items_type
+
         new_context = context.create_child_context()
-        new_context.define_variable(IdentifierVar(node.index_identifier, NumberType()))
+        new_context.define_variable(
+            IdentifierVar(node.index_identifier, node.index_identifier_type)
+        )
 
         return TypeCheckVisitor.visit_node(node.body, new_context)
 
@@ -180,7 +185,7 @@ class TypeCheckVisitor(IVisitor):
                     )
                     return False
 
-        node.inferred_type = RangeType()
+        node.inferred_type = RangeType(vector_type)
         return True
 
     @staticmethod
@@ -190,11 +195,13 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.index, context)
 
         if not isinstance(node.obj.inferred_type, Vector):
-            print(f"Can not index {node.obj.inferred_type.name}")
+            print(f"Object of type {node.obj.inferred_type.name} is not suscriptable")
             return False
 
         if not isinstance(node.index.inferred_type, NumberType):
-            print(f"Can not index with {node.index.inferred_type.name}")
+            print(
+                f"Can't implicity convert from {node.index.inferred_type.name} to Number"
+            )
             return False
 
         node.inferred_type = node.obj.items_type
@@ -213,7 +220,7 @@ class TypeCheckVisitor(IVisitor):
             print("Can not infer type of expression")
             return False
 
-        method = object_type.get_method(node.invocation.identifier)
+        method: Method | None = object_type.get_method(node.invocation.identifier)
         if method is None:
             print(
                 f"Method {node.invocation.identifier} is not defined in {object_type.name}"
@@ -227,7 +234,7 @@ class TypeCheckVisitor(IVisitor):
             return False
 
         for i, arg in enumerate(node.invocation.arguments):
-            if arg.inferred_type.conforms_to(method.params[i].type):
+            if not arg.inferred_type.conforms_to(method.params[i].type):
                 print(
                     f"Can not implicitly convert from {arg.inferred_type.name} to {method.params[i].name}"
                 )
@@ -239,18 +246,15 @@ class TypeCheckVisitor(IVisitor):
     @dispatch(Invocation, Context)
     def visit_node(node: Invocation, context: Context):
 
-        if not context.check_method(node.identifier, len(node.arguments)):
+        method: Method | None = context.get_method(node.identifier, len(node.arguments))
+
+        if method is None:
             print(f"Method {node.identifier} is not defined")
             return False
-
-        method = context.get_method(node.identifier, len(node.arguments))
 
         for i, arg in enumerate(node.arguments):
 
             TypeCheckVisitor.visit_node(arg, context)
-
-            print(arg.inferred_type)
-            print(method.params[i].type)
 
             if not arg.inferred_type.conforms_to(method.params[i].type):
                 print(
@@ -269,7 +273,7 @@ class TypeCheckVisitor(IVisitor):
         if isinstance(object_type, UnknownType):
             print("Can not infer type of expression")
             return False
-        atrribute = object_type.get_attribute(node.identifier)
+        atrribute: IdentifierVar | None = object_type.get_attribute(node.identifier)
 
         if atrribute is None:
             print(f"Attribute {node.identifier} is not defined in {object_type.name}")
@@ -292,37 +296,40 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.identifier, context)
         TypeCheckVisitor.visit_node(node.expression, context)
 
-        return node.identifier.inferred_type.conforms_to(node.expression.inferred_type)
+        return node.expression.inferred_type.conforms_to(node.identifier.inferred_type)
 
     @staticmethod
     @dispatch(Identifier, Context)
     def visit_node(node: Identifier, context: Context) -> bool:
 
-        if not context.check_var(node.identifier):
+        var_type = context.get_var_type(node.identifier)
+
+        if var_type is None:
             print(f"Variable {node.identifier} is not defined")
             return False
 
-        node.inferred_type = context.get_var_type(node.identifier)
-
+        node.inferred_type = var_type
         return True
 
     @staticmethod
     @dispatch(LetVar, Context)
     def visit_node(node: LetVar, context: Context) -> bool:
+
         HulkTranspiler.visit_node(node)
-        new_context = context.create_child_context()
+        new_context: Context = context.create_child_context()
+        valid_node = True
+
         for var_declaration in node.declarations:
             valid_declaration: bool = TypeCheckVisitor.visit_node(
                 var_declaration, context
             )
-            if not valid_declaration:
-                raise InvalidDeclarationException(var_declaration.identifier)
+            valid_node &= valid_declaration
 
             new_context.define_variable(
                 IdentifierVar(var_declaration.identifier, var_declaration.inferred_type)
             )
 
-        TypeCheckVisitor.visit_node(node.body, new_context)
+        return valid_node and TypeCheckVisitor.visit_node(node.body, new_context)
 
     @staticmethod
     @dispatch(VariableDeclaration, Context)
@@ -330,8 +337,8 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.expression, context)
 
         if not isinstance(node.static_type, UnknownType):
-            if not context.check_type(node.static_type.name):
-                raise InvalidDeclarationException(node.static_type)
+            if context.get_type(node.static_type.name) is None:
+                print(f"Type {node.static_type.name} is not defined")
 
             if not node.expression.inferred_type.conforms_to(node.static_type):
                 print(
@@ -341,11 +348,35 @@ class TypeCheckVisitor(IVisitor):
 
             return True
 
-        print(node.expression.inferred_type)
         if isinstance(node.expression.inferred_type, UnknownType):
-            raise InferTypeException()
+            print("Can't infer type of expression")
 
         node.inferred_type = node.expression.inferred_type
+        return True
+
+    @staticmethod
+    @dispatch(Instanciate, Context)
+    def visit_node(node: Instanciate, context: Context) -> bool:
+
+        type_t: Type | None = context.get_type(node.identifier)
+
+        if type_t is None:
+            print(f"{node.identifier} is not defined")
+            return False
+
+        if len(type_t.params) != len(node.params):
+            print(
+                f"Invalid constructor call {len(node.params)} arguments expected {len(type_t.params)} were given"
+            )
+            return False
+
+        for i, param in enumerate(node.params):
+            if not param.inferred_type.conforms_to(type_t.params[i]):
+                print(
+                    f"Can't implicity convert from {param.inferred_type.name} to {type_t.params[i].name}"
+                )
+                return False
+
         return True
 
     @staticmethod
@@ -450,7 +481,7 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.right, context)
 
         if isinstance(node.right, Identifier):
-            if not context.check_type(node.right.identifier):
+            if not context.check_type_or_protocol(node.right.identifier):
                 print(f"Type {node.right.identifier} is not defined")
                 return False
 
@@ -466,7 +497,7 @@ class TypeCheckVisitor(IVisitor):
         TypeCheckVisitor.visit_node(node.right, context)
 
         if isinstance(node.right, Identifier):
-            if not context.check_type(node.right.identifier):
+            if not context.check_type_or_protocol(node.right.identifier):
                 print(f"Type {node.right.identifier} is not defined")
                 return False
 

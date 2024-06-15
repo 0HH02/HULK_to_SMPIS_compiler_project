@@ -18,8 +18,9 @@ class Lexer:
 
     """
 
-    def __init__(self, patterns: list[TokenPattern]) -> None:
+    def __init__(self, patterns: list[TokenPattern], constants: dict[str, str]) -> None:
         self.patterns: list[TokenPattern] = patterns
+        self.constants: dict[str, str] = constants
 
     def tokenize(self, text: str) -> list[Token]:
         """
@@ -72,14 +73,19 @@ class Lexer:
 
                     i = match.end()
                     column = match.end()
-                    tokens.append(
-                        Token(
-                            match.group(),
-                            pattern.token_type,
-                            line_number=line,
-                            column_number=column,
-                        )
+
+                    new_token = Token(
+                        match.group(),
+                        pattern.token_type,
+                        line_number=line,
+                        column_number=column,
                     )
+
+                    if new_token.lex in self.constants:
+                        new_token.token_type = self.constants[new_token.lex][1]
+                        new_token.lex = self.constants[new_token.lex][0]
+
+                    tokens.append(new_token)
 
                     break
             else:
@@ -87,5 +93,5 @@ class Lexer:
                     token=text[i : i + 20], line=line, column=column
                 )
 
-        tokens.append(Token("", TokenType.EOF, line, column))
+        tokens.append(Token("$", TokenType.EOF, line, column))
         return tokens

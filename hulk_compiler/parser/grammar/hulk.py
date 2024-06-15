@@ -340,14 +340,14 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                 ],
             ),
             lambda s: TypeDeclaration(
-                identifier=s[1],
+                identifier=s[1].lex,
                 params=s[2],
                 inherits=s[3],
                 attributes=[],
                 functions=[],
             ),
             lambda s: TypeDeclaration(
-                identifier=s[1],
+                identifier=s[1].lex,
                 params=s[2],
                 inherits=None,
                 attributes=[
@@ -362,7 +362,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                 ],
             ),
             lambda s: TypeDeclaration(
-                identifier=s[1],
+                identifier=s[1].lex,
                 params=s[2],
                 inherits=None,
                 attributes=[],
@@ -370,7 +370,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
             ),
             ###
             lambda s: TypeDeclaration(
-                identifier=s[1],
+                identifier=s[1].lex,
                 params=[],
                 inherits=s[2],
                 attributes=[
@@ -385,14 +385,14 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                 ],
             ),
             lambda s: TypeDeclaration(
-                identifier=s[1],
+                identifier=s[1].lex,
                 params=[],
                 inherits=s[2],
                 attributes=[],
                 functions=[],
             ),
             lambda s: TypeDeclaration(
-                identifier=s[1],
+                identifier=s[1].lex,
                 params=[],
                 inherits=None,
                 attributes=[
@@ -407,7 +407,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                 ],
             ),
             lambda s: TypeDeclaration(
-                identifier=s[1],
+                identifier=s[1].lex,
                 params=[],
                 inherits=None,
                 attributes=[],
@@ -865,7 +865,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + in_terminal
         + expression
         + close_bracket,
-        (lambda s: ComprehensionVector(s[1], s[3], s[5])),
+        (lambda s: ComprehensionVector(s[1], s[3].lex, s[5])),
     )
 
     vector_element <= (
@@ -884,7 +884,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         primary_expression + dot + identifier
         | primary_expression + dot + invocation_expression,
         (
-            lambda s: AttributeCall(s[0], s[2]),
+            lambda s: AttributeCall(s[0], s[2].lex),
             lambda s: FunctionCall(s[0], s[2]),
         ),
     )

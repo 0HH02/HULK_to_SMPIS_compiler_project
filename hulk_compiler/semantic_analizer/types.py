@@ -197,6 +197,16 @@ class Protocol:
         return True
 
 
+class UnknownType(Type):
+    """
+    Represents an unknown type in the semantic analyzer.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("Unknown")
+        self.parent = ObjectType()
+
+
 class ObjectType(Type):
     """
     Represents an object type in the semantic analyzer.
@@ -236,7 +246,7 @@ class BooleanType(ObjectType):
         self.parent = ObjectType()
 
 
-class RangeType(Type):
+class RangeType(ObjectType):
     """
     Represents a range type.
 
@@ -250,9 +260,9 @@ class RangeType(Type):
         __init__(self): Initializes a new instance of the RangeType class.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, items_type: Type = UnknownType()) -> None:
         super().__init__("Range")
-        self.items_type: Type = UnknownType()
+        self.items_type: Type = items_type if items_type is not None else UnknownType()
         self.parent = ObjectType()
         self.methods = {
             "current": Method("current", [], NumberType()),
@@ -267,13 +277,3 @@ class RangeType(Type):
             "min": IdentifierVar("min", NumberType()),
             "max": IdentifierVar("max", NumberType()),
         }
-
-
-class UnknownType(Type):
-    """
-    Represents an unknown type in the semantic analyzer.
-    """
-
-    def __init__(self) -> None:
-        super().__init__("Unknown")
-        self.parent = ObjectType()
