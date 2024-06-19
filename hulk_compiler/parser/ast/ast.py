@@ -162,13 +162,13 @@ class VariableDeclaration(Expression):
         self,
         identifier: str,
         expression: Expression,
-        static_type: Type = UnknownType(),
+        static_type: str = "Unknown",
         inferred_type: Type = UnknownType(),
     ):
 
         self.identifier: str = identifier
         self.expression: Expression = expression
-        self.static_type: Type = static_type
+        self.static_type: str = static_type
         super().__init__(inferred_type)
 
 

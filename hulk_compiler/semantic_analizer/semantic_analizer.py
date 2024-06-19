@@ -17,5 +17,6 @@ def check_semantic(program: ASTNode):
         bool: True if the program passes semantic analysis, False otherwise.
     """
     program_context = Context()
+    program_context.define_built_ins()
 
     return TypeCheckVisitor.visit_node(program, program_context)

@@ -622,7 +622,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + in_terminal
         + expression
         + close_parenthesis,
-        (lambda s: [s[2], s[3], s[5]], lambda s: [s[2], None, s[4]]),
+        (lambda s: [s[2].lex, s[3], s[5]], lambda s: [s[2].lex, None, s[4]]),
     )
 
     let_header <= (

@@ -1,23 +1,41 @@
 """
 """
 
+from .hulk_built_in import (
+    ITERABLE_PROTOCOL,
+    SIN_FUNCTION,
+    SQRT_FUNCTION,
+    COS_FUNCTION,
+    LOG_FUNCTION,
+    EXP_FUNCTION,
+    RAND_FUNCTION,
+    PRINT_FUNCTION,
+    RANGE_FUNCTION,
+)
+
 from .types import (
     StringType,
     ObjectType,
     BooleanType,
     NumberType,
+    RangeType,
+    VectorType,
     UnknownType,
     Type,
     Method,
-    RangeType,
     IdentifierVar,
     Protocol,
 )
-from .semantic_exceptions import RedefineException, NotDeclaredVariableException
+from .semantic_exceptions import RedefineException
 
 
 # TODO resolve the create child context because we are duplicating so much data
 class Context:
+    """
+    Represents the context of an Abstract Syntax Tree (AST) and is used to store
+    the methods, variables, and types declared in the program.
+    """
+
     def __init__(self, father: "Context" = None) -> None:
         """
         Initializes a new instance of the Context class.
@@ -27,53 +45,44 @@ class Context:
         Args:
             father (Context, optional): The parent context. Defaults to None.
         """
-        self.types: dict[str, Type] = {
-            "Unknown": UnknownType(),
-            "Object": ObjectType(),
-            "Boolean": BooleanType(),
-            "Number": NumberType(),
-            "String": StringType(),
-            "Range": RangeType(),
-        }
-        self.protocols: list[Protocol] = [
-            Protocol(
-                "Iterable",
-                [
-                    Method("next", [], BooleanType()),
-                    Method(
-                        "current",
-                        [],
-                        ObjectType(),
-                    ),
-                ],
-            ),
-        ]
-        self.variables: list[IdentifierVar] = []
-        self.methods: list[Method] = [
-            Method("sqrt", [IdentifierVar("value", NumberType())], NumberType()),
-            Method("sin", [IdentifierVar("angle", NumberType())], NumberType()),
-            Method("cos", [IdentifierVar("angle", NumberType())], NumberType()),
-            Method(
-                "log",
-                [
-                    IdentifierVar("value", NumberType()),
-                    IdentifierVar("base", NumberType()),
-                ],
-                NumberType(),
-            ),
-            Method("exp", [IdentifierVar("value", NumberType())], NumberType()),
-            Method("rand", [], NumberType()),
-            Method("print", [IdentifierVar("message", ObjectType())], StringType()),
-            Method(
-                "range",
-                [
-                    IdentifierVar("start", NumberType()),
-                    IdentifierVar("end", NumberType()),
-                ],
-                RangeType(),
-            ),
-        ]
-        self.father: Context = father
+        self._types: dict[str, Type] = {}
+        self._protocols: dict[str, Protocol] = {}
+        self._variables: dict[str, IdentifierVar] = {}
+        self._methods: list[Method] = []
+        self._father: Context = father
+
+    def define_built_ins(self):
+        """
+        Defines the built-in types, protocols, and methods in the context.
+        """
+        self.define_type(StringType())
+        self.define_type(ObjectType())
+        self.define_type(BooleanType())
+        self.define_type(NumberType())
+        self.define_type(UnknownType())
+        self.define_type(RangeType())
+        self.define_type(VectorType())
+
+        self.define_protocol(ITERABLE_PROTOCOL)
+
+        self.define_method(SIN_FUNCTION)
+        self.define_method(SQRT_FUNCTION)
+        self.define_method(COS_FUNCTION)
+        self.define_method(LOG_FUNCTION)
+        self.define_method(EXP_FUNCTION)
+        self.define_method(RAND_FUNCTION)
+        self.define_method(PRINT_FUNCTION)
+        self.define_method(RANGE_FUNCTION)
+
+    @property
+    def iter_protocol(self) -> Protocol:
+        """
+        Returns the protocol for iterating over elements in the context.
+
+        Returns:
+            Protocol: The protocol for iterating over elements.
+        """
+        return self.get_protocol(ITERABLE_PROTOCOL.name)
 
     def define_type(self, type_t: Type):
         """
@@ -85,11 +94,11 @@ class Context:
         Raises:
             RedefineException: If the type with the given name already exists in the context.
         """
-        if self.get_type(type_t.name) is not None:
+        if self.get_type(type_t.name):
             raise RedefineException("Type", type_t.name)
-        self.types[type_t.name] = type_t
+        self._types[type_t.name] = type_t
 
-    def define_protocol(self, name: str, methods: list[Method]):
+    def define_protocol(self, protocol: Protocol):
         """
         Defines a new protocol in the context.
 
@@ -100,14 +109,10 @@ class Context:
         Raises:
             RedefineException: If the protocol with the given name already exists in the context.
         """
-        if self.get_protocol(name) is not None:
-            raise RedefineException("Protocol", name)
+        if self.get_protocol(protocol.name):
+            raise RedefineException("Protocol", protocol.name)
 
-        new_protocol = Protocol(name)
-        for method in methods:
-            new_protocol.set_method(method)
-
-        self.protocols.append(new_protocol)
+        self._protocols[protocol.name] = protocol
 
     def define_variable(self, var: IdentifierVar) -> None:
         """
@@ -120,12 +125,12 @@ class Context:
             RedefineException: If the variable is already defined in the context.
         """
 
-        if var.name in self.variables:
+        if var.name in self._variables:
             raise RedefineException("Variable", var.name)
 
-        self.variables.append(var)
+        self._variables[var.name] = var
 
-    def define_method(self, name: str, params: list[IdentifierVar], return_type):
+    def define_method(self, method: Method):
         """
         Defines a method in the context.
 
@@ -139,10 +144,10 @@ class Context:
             of parameters already exists.
         """
 
-        if self.get_method(name, len(params)) is not None:
-            raise RedefineException("Method", name)
+        if self.get_method(method.name, len(method.params)):
+            raise RedefineException("Method", method.name)
 
-        self.methods.append(Method(name, params, return_type))
+        self._methods.append(method)
 
     def get_var_type(self, name: str) -> Type | None:
         """
@@ -155,11 +160,11 @@ class Context:
             The type with the given name.
         """
         try:
-            return next(var.type for var in self.variables if var.name == name)
-        except StopIteration:
+            return self._variables[name].type
 
-            if self.father:
-                return self.father.get_var_type(name)
+        except KeyError:
+            if self._father:
+                return self._father.get_var_type(name)
 
             return None
 
@@ -174,12 +179,12 @@ class Context:
         Returns:
             The method with the given name and number of parameters.
         """
-        for method in self.methods:
+        for method in self._methods:
             if method.name == name and len(method.params) == params:
                 return method
 
-        if self.father:
-            return self.father.get_method(name, params)
+        if self._father:
+            return self._father.get_method(name, params)
 
         return None
 
@@ -194,10 +199,10 @@ class Context:
             The type with the given name.
         """
         try:
-            return self.types[name]
+            return self._types[name]
         except KeyError:
-            if self.father:
-                return self.father.get_type(name)
+            if self._father:
+                return self._father.get_type(name)
             return None
 
     def get_protocol(self, name: str) -> Protocol | None:
@@ -209,12 +214,10 @@ class Context:
             The protocol with the given name.
         """
         try:
-            return next(
-                protocol for protocol in self.protocols if protocol.name == name
-            )
-        except StopIteration:
-            if self.father:
-                return self.father.get_protocol(name)
+            return self._protocols[name]
+        except KeyError:
+            if self._father:
+                return self._father.get_protocol(name)
             return None
 
     def create_child_context(self) -> "Context":
@@ -222,14 +225,15 @@ class Context:
         Creates a new child context based on the current context.
 
         Returns:
-            A new instance of the Context class, representing the child context.
+            A new instance of the Context class, representing the child context and this context
+            as his father.
         """
         return Context(self)
 
     def __str__(self):
         return (
             "{\n\t"
-            + "\n\t".join(y for x in self.types.values() for y in str(x).split("\n"))
+            + "\n\t".join(y for x in self._types.values() for y in str(x).split("\n"))
             + "\n}"
         )
 

@@ -79,16 +79,16 @@ class Type:
         name: str,
         parent: "Type" = None,
         params: list[IdentifierVar] = None,
-        attributes: list[IdentifierVar] = None,
-        methods: list[Method] = None,
+        attributes: dict[str, IdentifierVar] = None,
+        methods: dict[str, Method] = None,
     ) -> None:
-        self.name = name
+        self.name: str = name
         self.parent: Type | None = parent
         self.params: list[IdentifierVar] = params if params is not None else []
-        self.attributes: list[IdentifierVar] = (
-            attributes if attributes is not None else []
+        self.attributes: dict[str, IdentifierVar] = (
+            attributes if attributes is not None else {}
         )
-        self.methods: list[Method] = methods if methods is not None else []
+        self.methods: dict[str, Method] = methods if methods is not None else {}
 
     def __eq__(self, value: object) -> bool:
         return isinstance(value, type(self)) and self.name == value.name
@@ -191,8 +191,20 @@ class Protocol:
         This method checks if the protocol is implemented by the given type.
         """
         for method in self.methods:
-            if not type_t.get_method(method):
+            type_method: Method | None = type_t.get_method(method.name)
+
+            if not type_method:
                 return False
+
+            if not type_method.return_type.conforms_to(method.return_type):
+                return False
+
+            if len(method.params) != len(type_method.params):
+                return False
+
+            for i, param in enumerate(method.params):
+                if not param.type.conforms_to(type_method.params[i]):
+                    return False
 
         return True
 
@@ -202,9 +214,13 @@ class UnknownType(Type):
     Represents an unknown type in the semantic analyzer.
     """
 
-    def __init__(self) -> None:
-        super().__init__("Unknown")
-        self.parent = ObjectType()
+    _instance = None
+
+    def __new__(cls) -> Type:
+        if not cls._instance:
+            cls._instance = Type("Unknown")
+
+        return cls._instance
 
 
 class ObjectType(Type):
@@ -212,41 +228,58 @@ class ObjectType(Type):
     Represents an object type in the semantic analyzer.
     """
 
-    def __init__(self, name: str = "Object") -> None:
-        super().__init__(name)
+    _instance = None
+
+    def __new__(cls) -> Type:
+        if not cls._instance:
+            cls._instance = Type("Object")
+
+        return cls._instance
 
 
-class NumberType(ObjectType):
+class NumberType(Type):
     """
     Represents a number type in the semantic analyzer.
     """
 
-    def __init__(self) -> None:
-        super().__init__("Number")
-        self.parent = ObjectType()
+    _instance = None
+
+    def __new__(cls) -> Type:
+        if not cls._instance:
+            cls._instance = Type("Number", ObjectType())
+
+        return cls._instance
 
 
-class StringType(ObjectType):
+class StringType(Type):
     """
     Represents a string type in the semantic analyzer.
     """
 
-    def __init__(self) -> None:
-        super().__init__("String")
-        self.parent = ObjectType()
+    _instance = None
+
+    def __new__(cls) -> Type:
+        if not cls._instance:
+            cls._instance = Type("String", ObjectType())
+
+        return cls._instance
 
 
-class BooleanType(ObjectType):
+class BooleanType(Type):
     """
     Represents a boolean type in the semantic analyzer.
     """
 
-    def __init__(self) -> None:
-        super().__init__("Boolean")
-        self.parent = ObjectType()
+    _instance = None
+
+    def __new__(cls) -> Type:
+        if not cls._instance:
+            cls._instance = Type("Boolean", ObjectType())
+
+        return cls._instance
 
 
-class RangeType(ObjectType):
+class RangeType(Type):
     """
     Represents a range type.
 
@@ -260,20 +293,39 @@ class RangeType(ObjectType):
         __init__(self): Initializes a new instance of the RangeType class.
     """
 
-    def __init__(self, items_type: Type = UnknownType()) -> None:
-        super().__init__("Range")
-        self.items_type: Type = items_type if items_type is not None else UnknownType()
-        self.parent = ObjectType()
-        self.methods = {
-            "current": Method("current", [], NumberType()),
-            "next": Method("next", [], NumberType()),
-        }
-        self.attributes = {
-            "min": IdentifierVar("min", NumberType()),
-            "max": IdentifierVar("max", NumberType()),
-        }
+    _instance = None
 
-        self.params = {
-            "min": IdentifierVar("min", NumberType()),
-            "max": IdentifierVar("max", NumberType()),
+    def __new__(cls) -> Type:
+        if not cls._instance:
+            cls._instance = Type("Range", ObjectType())
+            cls._instance.parent = ObjectType()
+            cls._instance.methods = {
+                "current": Method("current", [], NumberType()),
+                "next": Method("next", [], BooleanType()),
+            }
+            cls._instance.attributes = {
+                "min": IdentifierVar("min", NumberType()),
+                "max": IdentifierVar("max", NumberType()),
+                "current": IdentifierVar("current", NumberType()),
+            }
+            cls._instance.params = [
+                IdentifierVar("min", NumberType()),
+                IdentifierVar("max", NumberType()),
+            ]
+        return cls._instance
+
+
+class VectorType(Type):
+    """
+    Represents a vector type.
+
+    Args:
+        items_type (Type): The type of the items in the vector.
+    """
+
+    def __init__(self, items_type: Type = UnknownType()) -> None:
+        super().__init__("Vector", ObjectType())
+        self.methods = {
+            "current": Method("current", [], items_type),
+            "next": Method("next", [], BooleanType()),
         }
