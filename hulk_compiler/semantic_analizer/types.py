@@ -3,42 +3,6 @@ This module contains the types used in the semantic analyzer.
 """
 
 
-class Method:
-    """
-    Represents a method in a class.
-
-    Attributes:
-        name (str): The name of the method.
-        params (list): The parameters of the method.
-        return_type: The return type of the method.
-    """
-
-    def __init__(self, name: str, params: list["IdentifierVar"], return_type: "Type"):
-        self.name: str = name
-        self.params: list[IdentifierVar] = params
-        self.return_type: Type = return_type
-        self.line = -1
-
-    def __eq__(self, value: object) -> bool:
-        return (
-            isinstance(value, Method)
-            and self.name == value.name
-            and self.params == value.params
-            and self.return_type == value.return_type
-        )
-
-    def __str__(self) -> str:
-        string = f"method -> {self.name}"
-        string += "params :\n"
-        for param in self.params:
-            string += f"{param}\n"
-        string += f"return type : {self.return_type.name}"
-        return string
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-
 class IdentifierVar:
     """
     Represents a param or an atributte in a class.
@@ -69,6 +33,47 @@ class IdentifierVar:
         return hash(self.name)
 
 
+class Method:
+    """
+    Represents a method in a class.
+
+    Attributes:
+        name (str): The name of the method.
+        params (list): The parameters of the method.
+        return_type: The return type of the method.
+    """
+
+    def __init__(self, name: str, params: list["IdentifierVar"], return_type: "Type"):
+        self.name: str = name
+        self.params: list[IdentifierVar] = params
+        self.return_type: Type = return_type
+
+    def get_param(self, name: str) -> IdentifierVar | None:
+
+        for param in self.params:
+            if param.name == name:
+                return param
+
+    def __eq__(self, value: object) -> bool:
+        return (
+            isinstance(value, Method)
+            and self.name == value.name
+            and self.params == value.params
+            and self.return_type == value.return_type
+        )
+
+    def __str__(self) -> str:
+        string = f"method -> {self.name}"
+        string += "params :\n"
+        for param in self.params:
+            string += f"{param}\n"
+        string += f"return type : {self.return_type.name}"
+        return string
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
 class Type:
     """
     Represents a base class for types in the semantic analyzer.
@@ -84,14 +89,21 @@ class Type:
     ) -> None:
         self.name: str = name
         self.parent: Type | None = parent
-        self.params: list[IdentifierVar] = params if params is not None else []
-        self.attributes: dict[str, IdentifierVar] = (
-            attributes if attributes is not None else {}
-        )
-        self.methods: dict[str, Method] = methods if methods is not None else {}
+        self.params: list[IdentifierVar] = params if params else []
+        self.attributes: dict[str, IdentifierVar] = attributes if attributes else {}
+        self.methods: dict[str, Method] = methods if methods else {}
 
     def __eq__(self, value: object) -> bool:
         return isinstance(value, type(self)) and self.name == value.name
+
+    def get_param(self, name: str) -> IdentifierVar | None:
+
+        for param in self.params:
+            if param.name == name:
+                return param
+
+    def set_parent(self, type_t: "Type"):
+        self.parent = type_t
 
     def get_attribute(self, name: str) -> IdentifierVar | None:
         """
@@ -106,10 +118,8 @@ class Type:
         if name in self.attributes:
             return self.attributes[name]
 
-        if self.parent is not None:
+        if self.parent:
             return self.parent.get_attribute(name)
-
-        return None
 
     def get_method(self, name: str):
         """
@@ -124,10 +134,8 @@ class Type:
         if name in self.methods:
             return self.methods[name]
 
-        if self.parent is not None:
+        if self.parent:
             return self.parent.get_method(name)
-
-        return None
 
     def conforms_to(self, other) -> bool:
         """
@@ -308,7 +316,7 @@ class RangeType(Type):
                 "max": IdentifierVar("max", NumberType()),
                 "current": IdentifierVar("current", NumberType()),
             }
-            cls._instance.params = [
+            cls._instance._params = [
                 IdentifierVar("min", NumberType()),
                 IdentifierVar("max", NumberType()),
             ]

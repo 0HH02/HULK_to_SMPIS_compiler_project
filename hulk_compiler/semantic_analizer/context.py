@@ -29,7 +29,6 @@ from .types import (
 from .semantic_exceptions import RedefineException
 
 
-# TODO resolve the create child context because we are duplicating so much data
 class Context:
     """
     Represents the context of an Abstract Syntax Tree (AST) and is used to store

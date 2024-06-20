@@ -4,7 +4,7 @@
 
 from multipledispatch import dispatch
 
-from hulk_compiler.semantic_analizer.types import Type
+from hulk_compiler.semantic_analizer.types import Protocol, Type
 
 from .hulk_transpiler import HulkTranspiler
 
@@ -17,6 +17,7 @@ from .types import (
     UnknownType,
     Method,
     VectorType,
+    ObjectType,
 )
 from ..core.i_visitor import IVisitor
 from ..parser.ast.ast import (
@@ -43,6 +44,10 @@ from ..parser.ast.ast import (
     VariableDeclaration,
     Operator,
     Program,
+    TypeDeclaration,
+    FunctionDeclaration,
+    ProtocolDeclaration,
+    AttributeDeclaration,
 )
 
 
@@ -599,3 +604,90 @@ class TypeCheckVisitor(IVisitor):
 
         node.inferred_type = StringType()
         return True
+
+    @staticmethod
+    @dispatch(TypeDeclaration)
+    def visit_node(node: TypeDeclaration, context: Context):
+        type_context = context.create_child_context()
+
+        type_t: Type | None = context.get_type(node.identifier)
+
+        valid_node: bool = True
+
+        if not type_t:
+            print(f"Type {node.identifier} is somehow not defined")
+            return False
+
+        type_context.define_variable(IdentifierVar("self", type_t))
+
+        for method in type_t.methods.values():
+            type_context.define_method(method)
+
+        for param in type_t.params:
+            if param.type is UnknownType():
+                print(f"Can not infer param {param.name} in Type {type_t.name}")
+                return False
+
+        for attr in type_t.attributes.values():
+            if attr.type is UnknownType():
+                attr.type = ObjectType()
+                type_t.get_attribute(attr.name).type = ObjectType()
+
+            type_context.define_variable(IdentifierVar(attr.name, attr.type))
+
+        for method in node.functions:
+            valid_node &= TypeCheckVisitor(method)
+
+        return valid_node
+
+    @staticmethod
+    @dispatch(ProtocolDeclaration, Context)
+    def visit_node(node: ProtocolDeclaration, context: Context):
+        protocol: Protocol | None = context.get_protocol(node.identifier)
+
+        for method in protocol.methods:
+            for param in method.params:
+                if param.type is UnknownType():
+                    print(
+                        f"Missing type declaration of param: {param.name} in method: {method.name} in protocol: {protocol.name}"
+                    )
+                    return False
+
+            if method.return_type is UnknownType():
+                print(
+                    f"Missing return type declaration of method: {method.name} in protocol: {protocol.name}"
+                )
+                return False
+
+        return True
+
+    @staticmethod
+    @dispatch(FunctionDeclaration, Context, bool)
+    def visit_node(node: FunctionDeclaration, context: Context):
+        function_context: Context = context.create_child_context()
+
+        function_t: Method | None = context.get_method(
+            node.identifier, len(node.params)
+        )
+
+        for param in function_t.params:
+            if param.type is UnknownType():
+                param.type = ObjectType()
+                function_t.get_param(param.name).type = ObjectType()
+
+        valid_node = TypeCheckVisitor.visit_node(node.body, function_context)
+
+        fun_return_type: Type = node.body.inferred_type
+
+        if fun_return_type is UnknownType():
+            print(f"Can not infer return type of the function {function_t.name}")
+            return False
+
+        function_t.return_type = fun_return_type
+
+        return valid_node
+
+    @staticmethod
+    @dispatch(AttributeDeclaration, Context)
+    def visit_node(node: AttributeDeclaration, _: Context):
+        return node.expression.inferred_type.conforms_to(node.static_type)

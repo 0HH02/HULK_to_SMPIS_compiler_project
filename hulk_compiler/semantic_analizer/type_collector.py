@@ -3,7 +3,7 @@
 """
 
 from multipledispatch import dispatch
-from .types import Method, IdentifierVar
+from .types import Method, IdentifierVar, UnknownType, Protocol, Type
 from .context import Context
 from ..parser.ast.ast import (
     Program,
@@ -35,31 +35,64 @@ class TypeCollector(IVisitor):
     """
 
     @staticmethod
-    @dispatch(Program)
+    @dispatch(Program, Context)
     def visit_node(node: Program, context: Context):
         for class_def in node.defines:
             TypeCollector.visit_node(class_def, context)
 
     @staticmethod
-    @dispatch(ProtocolDeclaration)
+    @dispatch(ProtocolDeclaration, Context)
     def visit_node(node: ProtocolDeclaration, context: Context):
         methods = []
+
         for method in node.functions:
-            params: list[IdentifierVar] = []
-            for param in method.params:
-                if param.static_type is None:
-                    raise Exception(f"Type not defined for param {param.name}")
-                params.append(IdentifierVar(param.identifier, param.static_type))
-            if method.return_type is None:
-                raise Exception(
-                    f"Return type not defined for method {method.identifier}"
-                )
+            declarated_method: Method = TypeCollector.visit_node(method, context)
+            methods.append(declarated_method)
 
-            methods.append(Method(method.identifier, params, method.return_type))
+        for extend in node.extends:
+            protocol: Protocol | None = context.get_protocol(extend)
 
-        context.define_protocol(node.identifier, methods)
+            if protocol:
+                for method in protocol:
+                    declarated_method: Method = TypeCollector.visit_node(
+                        method, context
+                    )
+                    methods.append(declarated_method)
+
+        context.define_protocol(Protocol(node.identifier, methods))
 
     @staticmethod
-    @dispatch(FunctionDeclaration)
-    def visit_node(node: FunctionDeclaration, context: Context):
-        function_context: Context = context.create_child_context()
+    @dispatch(FunctionDeclaration, Context)
+    def visit_node(node: FunctionDeclaration, _: Context):
+
+        params = []
+
+        for param in node.params:
+            params.append(IdentifierVar(param.identifier, param.static_type))
+
+        return Method(node.identifier, params, UnknownType())
+
+    @staticmethod
+    @dispatch(TypeDeclaration, Context)
+    def visit_node(node: TypeDeclaration, context: Context):
+        params = []
+        attributes = []
+        methods = []
+
+        for param in node.params:
+            params.append(IdentifierVar(param.identifier, param.static_type))
+
+        for attr in node.attributes:
+            attributes.append(IdentifierVar(attr.identifier, attr.static_type))
+
+        for method in node.functions:
+            methods.append(TypeCollector.visit_node(method, context))
+
+        context.define_type(
+            Type(
+                node.identifier,
+                params=params,
+                attributes=attributes,
+                methods=methods,
+            )
+        )
