@@ -29,20 +29,42 @@ def test_all() -> None:
 
     # Iterate over all files in the test folder
     for filename in os.listdir(TEST_FOLDER):
+        input()
         # Get the full path to the file
         file_path: str = os.path.join(TEST_FOLDER, filename)
         # Open the file and read its contents
+        valid_programs = True
         with open(file_path, "r", encoding="utf-8") as file:
             program: str = file.read()
             try:
                 tokens: list[Token] = lexer.tokenize(program)
                 ast: ASTNode = parser.parse(tokens)
                 print(f"AST for file: {file_path}")
-                ASTPrinter.visit_node(ast)
-                check_semantic(ast)
+                valid_programs &= check_semantic(ast)
+                ASTPrinter.print(ast)
             except:
                 print(f"Error in file: {file_path}")
                 raise
+
+        print(valid_programs)
+
+
+def test_single(num: int):
+    TEST_FOLDER = "testers/test"
+
+    lexer = Lexer(TOKEN_PATTERNS, HULK_CONSTANTS)
+    grammar, mapping = get_hulk_grammar()
+    parser = ParserLR1(grammar, mapping)
+    valid_program = True
+    file_path = f"{TEST_FOLDER}/{num}.hulk"
+    with open(file_path, "r", encoding="utf-8") as file:
+        program = file.read()
+        tokens = lexer.tokenize(program)
+        ast = parser.parse(tokens)
+        print(f"AST for file {num}:")
+        valid_program &= check_semantic(ast)
+        ASTPrinter.print(ast)
+    print(valid_program)
 
 
 def hulk_to_CIL_test():

@@ -1,4 +1,4 @@
- type Range(min:Number, max:Number) {
+type Range_t(min:Number, max:Number) {
     min = min;
     max = max;
     current = min - 1;
@@ -8,6 +8,6 @@
 }
 
 
-for (x in new Range(0,10)) {
+for (x in new Range_t(0,10)) {
     print(x+1);
 }

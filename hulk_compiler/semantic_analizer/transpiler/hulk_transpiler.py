@@ -3,7 +3,7 @@
 
 from multipledispatch import dispatch
 
-from ..parser.ast.ast import LetVar
+from ...parser.ast.ast import LetVar
 
 
 class HulkTranspiler:
@@ -14,7 +14,7 @@ class HulkTranspiler:
 
     @staticmethod
     @dispatch(LetVar)
-    def visit_node(node: LetVar):
+    def transpile_node(node: LetVar):
         """
         Visits a LetVar node and performs a transformation on its declarations and body.
         """
@@ -23,4 +23,4 @@ class HulkTranspiler:
             other_body = node.body
             node.declarations = [node.declarations[0]]
             node.body = LetVar(other_declarations, other_body)
-            HulkTranspiler.visit_node(node.body)
+            HulkTranspiler.transpile_node(node.body)
