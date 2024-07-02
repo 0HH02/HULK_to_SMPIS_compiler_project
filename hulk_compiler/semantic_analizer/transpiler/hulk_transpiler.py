@@ -3,7 +3,18 @@
 
 from multipledispatch import dispatch
 
-from ...parser.ast.ast import LetVar
+from ...parser.ast.ast import (
+    LetVar,
+    For,
+    VariableDeclaration,
+    While,
+    FunctionCall,
+    Identifier,
+    Invocation,
+)
+from ..types import BooleanType
+
+# pylint: disable=function-redefined
 
 
 class HulkTranspiler:
@@ -24,3 +35,31 @@ class HulkTranspiler:
             node.declarations = [node.declarations[0]]
             node.body = LetVar(other_declarations, other_body)
             HulkTranspiler.transpile_node(node.body)
+
+    @staticmethod
+    @dispatch(For)
+    def transpile_node(node: For):
+        transpiled_node = LetVar(
+            [VariableDeclaration("iterator", node.iterable)],
+            While(
+                FunctionCall(
+                    Identifier("iterable", node.iterable.inferred_type),
+                    Invocation("next", [], BooleanType()),
+                ),
+                LetVar(
+                    [
+                        VariableDeclaration(
+                            f"{node.index_identifier}",
+                            FunctionCall(
+                                Identifier("iterable", node.iterable.inferred_type),
+                                Invocation("current", [], node.index_identifier_type),
+                            ),
+                            inferred_type=node.index_identifier_type,
+                        )
+                    ],
+                    node.body,
+                    node.body.inferred_type,
+                ),
+            ),
+        )
+        node = transpiled_node
