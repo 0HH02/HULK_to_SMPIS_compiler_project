@@ -152,7 +152,6 @@ class Expression(ASTNode):
         self.inferred_type = inferred_type
 
 
-@dataclass
 class VariableDeclaration(Expression):
     """
     Represents a variable declaration node in the AST.

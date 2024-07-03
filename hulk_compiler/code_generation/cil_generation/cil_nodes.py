@@ -1,5 +1,6 @@
 from multipledispatch import dispatch
 from hulk_compiler.core.i_visitor import IVisitor
+from hulk_compiler.parser.ast.ast import Operator
 
 # pylint: disable=function-redefined
 # pylint: disable=arguments-differ
@@ -20,7 +21,7 @@ class ProgramNode(Node):
 class TypeNode(Node):
     def __init__(self, name):
         self.name = name
-        self.attributes = []
+        self.attributes: dict[str, str] = {}
         self.methods = []
 
 
@@ -81,12 +82,55 @@ class DivNode(ArithmeticNode):
     pass
 
 
+class ModNode(ArithmeticNode):
+    pass
+
+
+class PowNode(ArithmeticNode):
+    pass
+
+
+class GTNode(ArithmeticNode):
+    pass
+
+
+class LTNode(ArithmeticNode):
+    pass
+
+
+class EQNode(ArithmeticNode):
+    pass
+
+
+class ANDNode(ArithmeticNode):
+    pass
+
+
+class ORNode(ArithmeticNode):
+    pass
+
+
+class NEQNode(ArithmeticNode):
+    pass
+
+
+class GENode(ArithmeticNode):
+    pass
+
+
+class LENode(ArithmeticNode):
+    pass
+
+
 class GetAttribNode(InstructionNode):
     pass
 
 
 class SetAttribNode(InstructionNode):
-    pass
+    def __init__(self, source, dest, value):
+        self.dest = dest
+        self.source = source
+        self.value = value
 
 
 class GetIndexNode(InstructionNode):
@@ -114,15 +158,25 @@ class TypeOfNode(InstructionNode):
 
 
 class LabelNode(InstructionNode):
-    pass
+    def __init__(self, name):
+        self.name = name
 
 
 class GotoNode(InstructionNode):
-    pass
+    def __init__(self, label_name):
+        self.label_name = label_name
 
 
 class GotoIfNode(InstructionNode):
-    pass
+    def __init__(self, condicion, label_name):
+        self.condicion = condicion
+        self.label_name = label_name
+
+
+class GotoIfNotNode(InstructionNode):
+    def __init__(self, condicion, label_name):
+        self.condicion = condicion
+        self.label_name = label_name
 
 
 class StaticCallNode(InstructionNode):
@@ -159,7 +213,10 @@ class LengthNode(InstructionNode):
 
 
 class ConcatNode(InstructionNode):
-    pass
+    def __init__(self, dest, left, right):
+        self.dest = dest
+        self.left = left
+        self.right = right
 
 
 class PrefixNode(InstructionNode):
@@ -184,6 +241,28 @@ class ReadNode(InstructionNode):
 class PrintNode(InstructionNode):
     def __init__(self, str_addr):
         self.str_addr = str_addr
+
+
+OPER_TO_CLASS = {
+    Operator.ADD: PlusNode,
+    Operator.SUB: MinusNode,
+    Operator.MUL: StarNode,
+    Operator.DIV: DivNode,
+    Operator.MOD: ModNode,
+    Operator.POW: PowNode,
+    Operator.AND: ANDNode,
+    Operator.OR: ORNode,
+    Operator.EQ: EQNode,
+    Operator.NEQ: NEQNode,
+    Operator.GT: GTNode,
+    Operator.LT: LTNode,
+    Operator.GE: GENode,
+    Operator.LE: LENode,
+    Operator.CONCAT: ConcatNode,
+    # Operator.DCONCAT:
+    # Operator.IS:
+    # Operator.AS:
+}
 
 
 class PrintVisitor(IVisitor):
@@ -223,6 +302,10 @@ class PrintVisitor(IVisitor):
     def visit_node(self, node: AssignNode):
         return f"{node.dest} = {node.source}"
 
+    @dispatch(SetAttribNode)
+    def visit_node(self, node: SetAttribNode):
+        return f"{node.source}.{node.dest} = {node.value}"
+
     @dispatch(PlusNode)
     def visit_node(self, node: PlusNode):
         return f"{node.dest} = {node.left} + {node.right}"
@@ -238,6 +321,46 @@ class PrintVisitor(IVisitor):
     @dispatch(DivNode)
     def visit_node(self, node: DivNode):
         return f"{node.dest} = {node.left} / {node.right}"
+
+    @dispatch(ModNode)
+    def visit_node(self, node: ModNode):
+        return f"{node.dest} = {node.left} % {node.right}"
+
+    @dispatch(GTNode)
+    def visit_node(self, node: GTNode):
+        return f"{node.dest} = {node.left} > {node.right}"
+
+    @dispatch(LTNode)
+    def visit_node(self, node: LTNode):
+        return f"{node.dest} = {node.left} < {node.right}"
+
+    @dispatch(PowNode)
+    def visit_node(self, node: PowNode):
+        return f"{node.dest} = {node.left} ** {node.right}"
+
+    @dispatch(EQNode)
+    def visit_node(self, node: EQNode):
+        return f"{node.dest} = {node.left} == {node.right}"
+
+    @dispatch(ANDNode)
+    def visit_node(self, node: ANDNode):
+        return f"{node.dest} = {node.left} and {node.right}"
+
+    @dispatch(ORNode)
+    def visit_node(self, node: ORNode):
+        return f"{node.dest} = {node.left} or {node.right}"
+
+    @dispatch(NEQNode)
+    def visit_node(self, node: NEQNode):
+        return f"{node.dest} = {node.left} != {node.right}"
+
+    @dispatch(GENode)
+    def visit_node(self, node: GENode):
+        return f"{node.dest} = {node.left} >= {node.right}"
+
+    @dispatch(LENode)
+    def visit_node(self, node: LENode):
+        return f"{node.dest} = {node.left} <= {node.right}"
 
     @dispatch(AllocateNode)
     def visit_node(self, node: AllocateNode):
@@ -262,3 +385,27 @@ class PrintVisitor(IVisitor):
     @dispatch(ReturnNode)
     def visit_node(self, node: ReturnNode):
         return f'RETURN {node.value if node.value is not None else ""}'
+
+    @dispatch(PrintNode)
+    def visit_node(self, node: PrintNode):
+        return f'PRINT {node.str_addr if node.str_addr is not None else ""}'
+
+    @dispatch(ConcatNode)
+    def visit_node(self, node: ConcatNode):
+        return f"{node.dest} = CONCAT {node.left} {node.right}"
+
+    @dispatch(LabelNode)
+    def visit_node(self, node: LabelNode):
+        return f"LABEL {node.name}"
+
+    @dispatch(GotoNode)
+    def visit_node(self, node: GotoNode):
+        return f"GOTO {node.label_name}"
+
+    @dispatch(GotoIfNode)
+    def visit_node(self, node: GotoIfNode):
+        return f"GOTO {node.label_name} if {node.condicion}"
+
+    @dispatch(GotoIfNotNode)
+    def visit_node(self, node: GotoIfNotNode):
+        return f"GOTO {node.label_name} if not {node.condicion}"
