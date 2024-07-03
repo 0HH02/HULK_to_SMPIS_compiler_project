@@ -167,6 +167,25 @@ class Context:
 
             return None
 
+    def get_var(self, name: str) -> IdentifierVar | None:
+        """
+        Retrieves a variable from the context.
+
+        Args:
+            name (str): The name of the variable to retrieve.
+
+        Returns:
+            The variable with the given name.
+        """
+        try:
+            return self._variables[name]
+
+        except KeyError:
+            if self._father:
+                return self._father.get_var(name)
+
+            return None
+
     def get_method(self, name: str, params: int) -> Method | None:
         """
         Retrieves a method from the context.
@@ -186,6 +205,16 @@ class Context:
             return self._father.get_method(name, params)
 
         return None
+
+    def check_method(self, name: str) -> bool:
+        for method in self._methods:
+            if method.name == name:
+                return True
+
+        if self._father:
+            return self._father.check_method(name)
+
+        return False
 
     def get_type(self, name: str) -> Type | None:
         """
@@ -219,6 +248,11 @@ class Context:
                 return self._father.get_protocol(name)
             return None
 
+    def get_type_or_protocol(self, name: str) -> Type | Protocol | None:
+        type_t = self.get_type(name)
+
+        return type_t if type_t else self.get_protocol(name)
+
     def create_child_context(self) -> "Context":
         """
         Creates a new child context based on the current context.
@@ -231,8 +265,16 @@ class Context:
 
     def __str__(self):
         return (
-            "{\n\t"
+            "Types: {\n\t"
             + "\n\t".join(y for x in self._types.values() for y in str(x).split("\n"))
+            + "\n}\n"
+            + "Methods: {\n\t"
+            + "\n\t".join(y for x in self._methods for y in str(x).split("\n"))
+            + "\n}\n"
+            + "Protocols: {\n\t"
+            + "\n\t".join(
+                y for x in self._protocols.values() for y in str(x).split("\n")
+            )
             + "\n}"
         )
 

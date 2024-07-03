@@ -455,11 +455,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
     )
 
     inherits_declaration <= (
-        open_parenthesis + ~argument_list + close_parenthesis,
-        (
-            lambda s: s[1],
-            lambda s: [],
-        ),
+        open_parenthesis + argument_list + close_parenthesis,
+        lambda s: s[1],
     )
 
     function_definition <= (inline_function | block_function, (lambda s: s[0]))
@@ -491,7 +488,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
             lambda s: FunctionDeclaration(s[0].lex, s[2], s[5], s[4]),
             lambda s: FunctionDeclaration(s[0].lex, s[2], s[4]),
             lambda s: FunctionDeclaration(s[0].lex, [], s[4], s[3]),
-            lambda s: FunctionDeclaration(s[0].lex, [], s[3], []),
+            lambda s: FunctionDeclaration(s[0].lex, [], s[3]),
         ),
     )
 

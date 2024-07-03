@@ -94,11 +94,11 @@ class AttributeDeclaration(ASTNode):
         self,
         identifier: str,
         expression: "Expression",
-        static_type: Type = UnknownType(),
+        static_type: str | None = None,
     ):
         self.identifier: str = identifier
         self.expression: "Expression" = expression
-        self.static_type: Type = static_type
+        self.static_type: str | None = static_type
 
 
 class FunctionDeclaration(DefineStatement):
@@ -111,12 +111,13 @@ class FunctionDeclaration(DefineStatement):
         identifier: str,
         params: list["Parameter"],
         body: "Expression",
-        return_type: Type = UnknownType(),
+        declared_return_type: str | None = None,
     ) -> None:
         self.identifier: str = identifier
         self.params: list["Parameter"] = params
         self.body: "Expression" = body
-        self.return_type: Type = return_type
+        self.static_return_type: str | None = declared_return_type
+        self.inferred_return_type: Type = UnknownType()
 
 
 class Parameter(ASTNode):
@@ -124,10 +125,16 @@ class Parameter(ASTNode):
     Represents a parameter node in the AST.
     """
 
-    def __init__(self, identifier: str, static_type: Type = UnknownType()) -> None:
+    def __init__(
+        self,
+        identifier: str,
+        static_type: str | None = None,
+        inferred_type: Type = UnknownType(),
+    ) -> None:
 
         self.identifier: str = identifier
-        self.static_type: Type = static_type
+        self.static_type: str | None = static_type
+        self.inferred_type: Type = inferred_type
 
 
 class ProtocolDeclaration(DefineStatement):
@@ -161,13 +168,13 @@ class VariableDeclaration(Expression):
         self,
         identifier: str,
         expression: Expression,
-        static_type: str = "Unknown",
+        static_type: str | None = None,
         inferred_type: Type = UnknownType(),
     ):
 
         self.identifier: str = identifier
         self.expression: Expression = expression
-        self.static_type: str = static_type
+        self.static_type: str | None = static_type
         super().__init__(inferred_type)
 
 
@@ -296,7 +303,9 @@ class For(Expression):
         inferred_type: Type = UnknownType(),
     ):
         self.index_identifier: str = index_identifier
-        self.index_identifier_type: Type = index_identifier_type
+        self.index_identifier_type: Type = (
+            index_identifier_type if not index_identifier_type else UnknownType()
+        )
         self.iterable: Expression = iterable
         self.body: Expression = body
         super().__init__(inferred_type)
