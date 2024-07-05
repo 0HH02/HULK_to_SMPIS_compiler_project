@@ -11,6 +11,11 @@ from ...parser.ast.ast import (
     FunctionCall,
     Identifier,
     Invocation,
+    ComprehensionVector,
+    Vector,
+    LiteralNode,
+    DestructiveAssign,
+    IndexNode,
 )
 from ..types import BooleanType
 
@@ -40,7 +45,7 @@ class HulkTranspiler:
     @dispatch(For)
     def transpile_node(node: For):
         transpiled_node = LetVar(
-            [VariableDeclaration("iterator", node.iterable)],
+            [VariableDeclaration("iterable", node.iterable)],
             While(
                 FunctionCall(
                     Identifier("iterable", node.iterable.inferred_type),
@@ -62,4 +67,34 @@ class HulkTranspiler:
                 ),
             ),
         )
+        return transpiled_node
+
+    @staticmethod
+    @dispatch(ComprehensionVector)
+    def transpile_node(node: ComprehensionVector):
+        transpiled_node = LetVar(
+            [
+                VariableDeclaration(
+                    "list",
+                    Vector(
+                        [
+                            LiteralNode(0, None)
+                            for x in range(
+                                int(node.iterator.arguments[0].value),
+                                int(node.iterator.arguments[1].value),
+                            )
+                        ]
+                    ),
+                )
+            ],
+            For(
+                node.identifier,
+                None,
+                node.iterator,
+                DestructiveAssign(
+                    IndexNode(Identifier("list"), Identifier("x")), node.generator
+                ),
+            ),
+        )
+
         return transpiled_node

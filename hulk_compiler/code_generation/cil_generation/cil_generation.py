@@ -1,7 +1,10 @@
 from typing import Any
 from multipledispatch import dispatch
 
-from hulk_compiler.code_generation.cil_generation.cil_nodes import FunctionNode
+from hulk_compiler.code_generation.cil_generation.cil_nodes import (
+    DataNode,
+    FunctionNode,
+)
 from .cil_nodes import *
 from .base_cil_generation import BaseHULKToCILVisitor
 from .cil_context import Context
@@ -51,23 +54,61 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
     @dispatch(Program)
     def visit_node(self, node: Program, context: Context = Context()):
-        ######################################################
-        # node.declarations -> [ ClassDeclarationNode ... ]
-        ######################################################
-
-        self.current_function = self.register_function("entry")
-        instance = self.define_internal_local()
-        result = self.define_internal_local()
-        main_method_name = self.to_function_name("main", "Main")
-        self.register_instruction(ArgNode(instance))
-        self.register_instruction(AllocateNode("Main", instance))
-        self.register_instruction(StaticCallNode(main_method_name, result))
-        self.register_instruction(ReturnNode(0))
-
-        self.visit_node(node.statement, context.create_child_context())
+        self.buildin_types(node)
         main = Type("main")
         self.current_function = None
 
+        self.current_type = main
+        for define in node.defines:
+            if isinstance(define, FunctionDeclaration):
+                self.current_type = main
+                self.visit_node(define, context.create_child_context())
+
+        orden: list[TypeDeclaration] = self.topological_sort(node)
+        for n in orden:
+            self.visit_node(n, context.create_child_context())
+
+        self.current_function = self.register_function("function_entry")
+        self.visit_node(node.statement, context.create_child_context())
+        self.register_instruction(ReturnNode(0))
+
+        return ProgramNode(self.dottypes, self.dotdata, self.dotcode)
+
+    def buildin_types(self, node):
+        node.defines.append(
+            TypeDeclaration(
+                "range",
+                [Parameter("min"), Parameter("max")],
+                None,
+                [
+                    AttributeDeclaration("min", Identifier("min")),
+                    AttributeDeclaration("max", Identifier("max")),
+                ],
+                [
+                    FunctionDeclaration("current", [], LiteralNode("1", None)),
+                    FunctionDeclaration("next", [], LiteralNode("2", None)),
+                    FunctionDeclaration("get_item", [], LiteralNode("2", None)),
+                ],
+            )
+        )
+        node.defines.append(
+            TypeDeclaration(
+                "vector",
+                [Parameter("elements"), Parameter("length")],
+                None,
+                [
+                    AttributeDeclaration("elements", Identifier("elements")),
+                    AttributeDeclaration("length", Identifier("length")),
+                    AttributeDeclaration("current", LiteralNode("0", NumberType())),
+                ],
+                [
+                    FunctionDeclaration("current", [], LiteralNode("1", None)),
+                    FunctionDeclaration("next", [], LiteralNode("2", None)),
+                ],
+            )
+        )
+
+    def topological_sort(self, node) -> list[TypeDeclaration]:
         type_list: list[TypeDeclaration] = [
             tp for tp in node.defines if isinstance(tp, TypeDeclaration)
         ]
@@ -99,24 +140,14 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
                 indegrees[vecino] -= 1
                 if indegrees[vecino] == 0:
                     cola.append(vecino)
-
-        self.current_type = main
-        for define in node.defines:
-            if isinstance(define, FunctionDeclaration):
-                self.current_type = main
-                self.visit_node(define, context.create_child_context())
-
-        for n in orden:
-            self.visit_node(n, context.create_child_context())
-
-        return ProgramNode(self.dottypes, self.dotdata, self.dotcode)
+        return orden
 
     @dispatch(TypeDeclaration, Context)
     def visit_node(self, node: TypeDeclaration, context: Context):
         self.current_type = self.register_type(node.identifier)
 
         if node.inherits:
-            father = None
+            father = TypeNode("None")
             for t in self.dottypes:
                 if t.name == node.inherits.identifier:
                     father = t
@@ -124,23 +155,67 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
             for attr in father.attributes:
                 self.current_type.attributes[attr] = father.attributes[attr]
             for method in father.methods:
-                self.current_type.methods.append(method)
+                self.current_type.methods.append([method[0], method[1]])
 
-        self.current_function = self.register_function(f"{node.identifier}_constructor")
+        self.current_function = self.register_function(
+            f"function_{node.identifier}_constructor"
+        )
         self.current_type.methods.append(
-            ("constructor", f"{node.identifier}_constructor")
+            ["constructor", f"function_{node.identifier}_constructor"]
         )
         context.define_method(
-            "contructor", f"{node.identifier}_constructor", len(node.params)
+            "contructor", f"function_{node.identifier}_constructor", len(node.params)
         )
-        for attr in node.attributes:
-            self.visit_node(attr, context.create_child_context())
+        if node.inherits:
+            if node.inherits.arguments:
+                for attr in node.params:
+                    param_name = f"{self.current_function.name[9:]}_{attr.identifier}_{len(self.localvars)}"
+                    context.define_variable(attr.identifier, param_name)
+                    self.current_function.params.append(ParamNode(param_name))
+                args = []
+                for attr in node.inherits.arguments:
+                    result = self.visit_node(attr, context.create_child_context())
+                    args.append(result)
+                for arg in args:
+                    self.register_instruction(ArgNode(arg))
+                result = self.register_local(IdentifierVar("constructor_result", None))
+                self.register_instruction(
+                    DynamicCallNode(
+                        self.current_type.name,
+                        f"function_{node.inherits.identifier}_constructor",
+                        result,
+                    )
+                )
+            else:
+                result = self.register_local(IdentifierVar("constructor_result", None))
+                self.register_instruction(
+                    DynamicCallNode(
+                        self.current_type.name,
+                        f"function_{node.inherits.identifier}_constructor",
+                        result,
+                    )
+                )
+        elif node.params:
+            for attr in node.params:
+                param_name = f"{self.current_function.name[9:]}_{attr.identifier}_{len(self.localvars)}"
+                context.define_variable(attr.identifier, param_name)
+                self.current_function.params.append(ParamNode(param_name))
+            for attr in node.attributes:
+                self.visit_node(attr, context.create_child_context())
+        else:
+            for attr in node.attributes:
+                self.visit_node(attr, context.create_child_context())
         for method in node.functions:
             method_reference = self.visit_node(method, context.create_child_context())
-            self.current_type.methods.append((method.identifier, method_reference))
-            context.define_method(
-                method.identifier, method_reference, len(method.params)
-            )
+            for method_declared in self.current_type.methods:
+                if method_declared[0] == method.identifier:
+                    method_declared[1] = method_reference
+                    break
+            else:
+                self.current_type.methods.append([method.identifier, method_reference])
+                context.define_method(
+                    method.identifier, method_reference, len(method.params)
+                )
 
     @dispatch(AttributeDeclaration, Context)
     def visit_node(self, node: AttributeDeclaration, context: Context):
@@ -231,11 +306,16 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
     @dispatch(LiteralNode, Context)
     def visit_node(self, node: LiteralNode, context: Context):
-        if isinstance(node.inferred_type, StringType):
-            return self.register_data(node.value)
-        # if node.inferred_type is NumberType:
-        #     return int(node.value)
-        return node.value
+        if node.inferred_type is StringType():
+            return self.register_data(node.value).dest
+
+        reference = self.register_local(
+            IdentifierVar(
+                f"value_{node.value}_{len(self.current_function.localvars)}", None
+            )
+        )
+        self.register_instruction(AssignNode(reference, node.value))
+        return reference
 
     @dispatch(Instanciate, Context)
     def visit_node(self, node: Instanciate, context: Context):
@@ -300,7 +380,9 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
         left = self.visit_node(node.left, context.create_child_context())
         right = self.visit_node(node.right, context.create_child_context())
-        result = self.define_internal_local()
+        result = self.register_local(
+            IdentifierVar(f"value_{len(self.current_function.localvars)}", None)
+        )
         self.register_instruction(OPER_TO_CLASS[node.operator](result, left, right))
         return result
 
@@ -372,9 +454,47 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
     @dispatch(Identifier, Context)
     def visit_node(self, node: Identifier, context: Context):
         value = context.get_var(node.identifier)
+        if value is None:
+            value = context.get_type(node.identifier)
         return value
 
     @dispatch(For, Context)
     def visit_node(self, node: For, context: Context):
         node = HulkTranspiler.transpile_node(node)
-        return self.visit_node(node, context)
+        return self.visit_node(node, context.create_child_context())
+
+    @dispatch(Vector, Context)
+    def visit_node(self, node: Vector, context: Context):
+        # Crear un nuevo vector
+        vector: ArrayNode = self.register_data(
+            [element.value for element in node.elements]
+        )
+
+        instance = self.define_internal_local()
+        self.register_instruction(AllocateNode("array", instance))
+
+        self.register_instruction(ArgNode(vector.dest))
+        self.register_instruction(ArgNode(len(node.elements)))
+
+        result = self.define_internal_local()
+        self.register_instruction(
+            StaticCallNode(f"function_vector_constructor", result)
+        )
+        return instance
+
+    @dispatch(IndexNode, Context)
+    def visit_node(self, node: IndexNode, context: Context):
+        if isinstance(node.index, LiteralNode):
+            index = self.visit_node(node.index, context)
+        else:
+            index = context.get_var(node.index.identifier)
+        vector = context.get_var(node.obj.identifier)
+        result = self.register_local(IdentifierVar("indexed_value", None))
+        self.register_instruction(ArgNode(index))
+        self.register_instruction(DynamicCallNode(vector, "get_item", result))
+        return result
+
+    @dispatch(ComprehensionVector, Context)
+    def visit_node(self, node: ComprehensionVector, context: Context):
+        node = HulkTranspiler.transpile_node(node)
+        return self.visit_node(node, context.create_child_context())

@@ -148,7 +148,9 @@ class AllocateNode(InstructionNode):
 
 
 class ArrayNode(InstructionNode):
-    pass
+    def __init__(self, list: list, dest: str):
+        self.list = list
+        self.dest = dest
 
 
 class TypeOfNode(InstructionNode):
@@ -219,6 +221,20 @@ class ConcatNode(InstructionNode):
         self.right = right
 
 
+class IsNode(InstructionNode):
+    def __init__(self, dest, left, right):
+        self.dest = dest
+        self.left = left
+        self.right = right
+
+
+class AsNode(InstructionNode):
+    def __init__(self, dest, left, right):
+        self.dest = dest
+        self.left = left
+        self.right = right
+
+
 class PrefixNode(InstructionNode):
     pass
 
@@ -259,9 +275,9 @@ OPER_TO_CLASS = {
     Operator.GE: GENode,
     Operator.LE: LENode,
     Operator.CONCAT: ConcatNode,
-    # Operator.DCONCAT:
-    # Operator.IS:
-    # Operator.AS:
+    Operator.DCONCAT: ConcatNode,
+    Operator.IS: IsNode,
+    Operator.AS: AsNode,
 }
 
 
@@ -362,6 +378,14 @@ class PrintVisitor(IVisitor):
     def visit_node(self, node: LENode):
         return f"{node.dest} = {node.left} <= {node.right}"
 
+    @dispatch(IsNode)
+    def visit_node(self, node: IsNode):
+        return f"{node.dest} = {node.left} is {node.right}"
+
+    @dispatch(AsNode)
+    def visit_node(self, node: AsNode):
+        return f"{node.dest} = {node.left} as {node.right}"
+
     @dispatch(AllocateNode)
     def visit_node(self, node: AllocateNode):
         return f"{node.dest} = ALLOCATE {node.type}"
@@ -406,6 +430,6 @@ class PrintVisitor(IVisitor):
     def visit_node(self, node: GotoIfNode):
         return f"GOTO {node.label_name} if {node.condicion}"
 
-    @dispatch(GotoIfNotNode)
-    def visit_node(self, node: GotoIfNotNode):
-        return f"GOTO {node.label_name} if not {node.condicion}"
+    @dispatch(ArrayNode)
+    def visit_node(self, node: ArrayNode):
+        return f"ARRAY {node.dest} {[str(x) for x in node.list]}"
