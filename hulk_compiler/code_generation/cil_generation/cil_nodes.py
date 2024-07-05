@@ -13,9 +13,9 @@ class Node:
 
 class ProgramNode(Node):
     def __init__(self, dottypes, dotdata, dotcode):
-        self.dottypes = dottypes
-        self.dotdata = dotdata
-        self.dotcode = dotcode
+        self.dottypes: list[TypeNode] = dottypes
+        self.dotdata: list[ArrayNode] = dotdata
+        self.dotcode: list[FunctionNode] = dotcode
 
 
 class TypeNode(Node):
@@ -54,6 +54,12 @@ class InstructionNode(Node):
 
 
 class AssignNode(InstructionNode):
+    def __init__(self, dest, source):
+        self.dest = dest
+        self.source = source
+
+
+class MoveNode(InstructionNode):
     def __init__(self, dest, source):
         self.dest = dest
         self.source = source
@@ -316,7 +322,11 @@ class PrintVisitor(IVisitor):
 
     @dispatch(AssignNode)
     def visit_node(self, node: AssignNode):
-        return f"{node.dest} = {node.source}"
+        return f"ASSIGN {node.dest} = {node.source}"
+
+    @dispatch(MoveNode)
+    def visit_node(self, node: MoveNode):
+        return f"MOVE {node.dest} = {node.source}"
 
     @dispatch(SetAttribNode)
     def visit_node(self, node: SetAttribNode):

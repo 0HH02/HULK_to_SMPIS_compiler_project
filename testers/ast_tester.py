@@ -53,9 +53,12 @@ def test_all() -> None:
                 print("\n=========================================================\n")
                 # check_semantic(ast)
 
-                # Quito temporalmente los que llevan ciclo for
                 cil_ast = HULKToCILVisitor().visit_node(ast)
                 print(PrintVisitor().visit_node(cil_ast))
+                print("\n=========================================================\n")
+
+                mips_ast = CilToMipsVisitor().visit(cil_ast)
+
             except:
                 print(f"Error in file: {file_path}")
                 raise

@@ -54,15 +54,11 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
     @dispatch(Program)
     def visit_node(self, node: Program, context: Context = Context()):
-        self.buildin_types(node)
+        # self.buildin_types(node)
         ######################################################
         # node.declarations -> [ ClassDeclarationNode ... ]
         ######################################################
 
-        self.current_function = self.register_function("main")
-        main_method_name = self.to_function_name("main", "Main")
-
-        self.visit_node(node.statement, context.create_child_context())
         main = Type("main")
         self.current_function = None
 
@@ -76,9 +72,9 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         for n in orden:
             self.visit_node(n, context.create_child_context())
 
-        self.current_function = self.register_function("function_entry")
+        self.current_function = self.register_function("main")
         self.visit_node(node.statement, context.create_child_context())
-        self.register_instruction(ReturnNode(0))
+        # self.register_instruction(ReturnNode(0))
 
         return ProgramNode(self.dottypes, self.dotdata, self.dotcode)
 
@@ -282,7 +278,8 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         context.define_variable(node.identifier, var_name)
 
         expr_value = self.visit_node(node.expression, context.create_child_context())
-        self.register_instruction(AssignNode(var_name, expr_value))
+
+        self.register_instruction(MoveNode(var_name, expr_value))
         return var_name
 
     @dispatch(LetVar, Context)
