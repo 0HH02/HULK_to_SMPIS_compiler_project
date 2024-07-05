@@ -24,6 +24,7 @@ from testers.semantic_analizer import (
     AST8,
     AST9,
 )
+from hulk_compiler.mips.mips_generation import CilToMipsVisitor
 
 
 def test_all() -> None:
@@ -40,7 +41,7 @@ def test_all() -> None:
     i = 0
     for filename in os.listdir(TEST_FOLDER):
         i += 1
-        if i > 31:
+        if i > 0:
             # Get the full path to the file
             file_path: str = os.path.join(TEST_FOLDER, filename)
 
@@ -68,6 +69,8 @@ def test_all() -> None:
                     ):
                         cil_ast = HULKToCILVisitor().visit_node(ast)
                         print(PrintVisitor().visit_node(cil_ast))
+                        CilToMipsVisitor().visit(cil_ast)
+
                     else:
                         print(f"El archivo {filename} tiene un ciclo for")
                 except:

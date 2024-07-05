@@ -55,14 +55,8 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         # node.declarations -> [ ClassDeclarationNode ... ]
         ######################################################
 
-        self.current_function = self.register_function("entry")
-        instance = self.define_internal_local()
-        result = self.define_internal_local()
+        self.current_function = self.register_function("main")
         main_method_name = self.to_function_name("main", "Main")
-        self.register_instruction(ArgNode(instance))
-        self.register_instruction(AllocateNode("Main", instance))
-        self.register_instruction(StaticCallNode(main_method_name, result))
-        self.register_instruction(ReturnNode(0))
 
         self.visit_node(node.statement, context.create_child_context())
         main = Type("main")
