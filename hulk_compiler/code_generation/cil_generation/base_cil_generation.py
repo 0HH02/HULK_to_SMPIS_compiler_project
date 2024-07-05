@@ -59,6 +59,6 @@ class BaseHULKToCILVisitor:
 
     def register_data(self, value):
         vname = f"data_{len(self.dotdata)}"
-        data_node = DataNode(vname, value)
+        data_node = ArrayNode(value, vname)
         self.dotdata.append(data_node)
         return data_node

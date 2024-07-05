@@ -38,45 +38,28 @@ def test_all() -> None:
     # Get the path to the test folder
     TEST_FOLDER = "testers/test"
     # Iterate over all files in the test folder
-    i = 0
     for filename in os.listdir(TEST_FOLDER):
-        i += 1
-        if i > 0:
-            # Get the full path to the file
-            file_path: str = os.path.join(TEST_FOLDER, filename)
+        # Get the full path to the file
+        file_path: str = os.path.join(TEST_FOLDER, filename)
 
-            # Open the file and read its contents
-            with open(file_path, "r", encoding="utf-8") as file:
-                program: str = file.read()
-                try:
-                    tokens: list[Token] = lexer.tokenize(program)
-                    ast: ASTNode = parser.parse(tokens)
-                    print(f"AST for file: {file_path}")
-                    # ASTPrinter.visit_node(ast)
-                    # print(
-                    #     "\n=========================================================\n"
-                    # )
-                    # check_semantic(ast)
+        # Open the file and read its contents
+        with open(file_path, "r", encoding="utf-8") as file:
+            program: str = file.read()
+            try:
+                tokens: list[Token] = lexer.tokenize(program)
+                ast: ASTNode = parser.parse(tokens)
+                print(f"AST for file: {file_path}")
+                ASTPrinter.print(ast)
+                print("\n=========================================================\n")
+                # check_semantic(ast)
 
-                    # Quito temporalmente los que llevan ciclo for
-                    if (
-                        filename != "31.hulk"
-                        and filename != "39.hulk"
-                        and filename != "41.hulk"
-                        and filename != "42.hulk"
-                        and filename != "43.hulk"
-                        and filename != "44.hulk"
-                    ):
-                        cil_ast = HULKToCILVisitor().visit_node(ast)
-                        print(PrintVisitor().visit_node(cil_ast))
-                        CilToMipsVisitor().visit(cil_ast)
-
-                    else:
-                        print(f"El archivo {filename} tiene un ciclo for")
-                except:
-                    print(f"Error in file: {file_path}")
-                    raise
-                input()
+                # Quito temporalmente los que llevan ciclo for
+                cil_ast = HULKToCILVisitor().visit_node(ast)
+                print(PrintVisitor().visit_node(cil_ast))
+            except:
+                print(f"Error in file: {file_path}")
+                raise
+            input()
 
 
 def test_single(num: int):
