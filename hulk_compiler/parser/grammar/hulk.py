@@ -338,6 +338,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                     for definition in s[5]
                     if isinstance(definition, FunctionDeclaration)
                 ],
+                line=s[1].line_number,
+                column=s[1].column_number,
             ),
             lambda s: TypeDeclaration(
                 identifier=s[1].lex,
@@ -345,6 +347,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                 inherits=s[3],
                 attributes=[],
                 functions=[],
+                line=s[1].line_number,
+                column=s[1].column_number,
             ),
             lambda s: TypeDeclaration(
                 identifier=s[1].lex,
@@ -360,6 +364,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                     for definition in s[4]
                     if isinstance(definition, FunctionDeclaration)
                 ],
+                line=s[1].line_number,
+                column=s[1].column_number,
             ),
             lambda s: TypeDeclaration(
                 identifier=s[1].lex,
@@ -367,6 +373,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                 inherits=None,
                 attributes=[],
                 functions=[],
+                line=s[1].line_number,
+                column=s[1].column_number,
             ),
             ###
             lambda s: TypeDeclaration(
@@ -383,6 +391,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                     for definition in s[4]
                     if isinstance(definition, FunctionDeclaration)
                 ],
+                line=s[1].line_number,
+                column=s[1].column_number,
             ),
             lambda s: TypeDeclaration(
                 identifier=s[1].lex,
@@ -390,6 +400,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                 inherits=s[2],
                 attributes=[],
                 functions=[],
+                line=s[1].line_number,
+                column=s[1].column_number,
             ),
             lambda s: TypeDeclaration(
                 identifier=s[1].lex,
@@ -405,6 +417,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                     for definition in s[3]
                     if isinstance(definition, FunctionDeclaration)
                 ],
+                line=s[1].line_number,
+                column=s[1].column_number,
             ),
             lambda s: TypeDeclaration(
                 identifier=s[1].lex,
@@ -412,6 +426,8 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
                 inherits=None,
                 attributes=[],
                 functions=[],
+                line=s[1].line_number,
+                column=s[1].column_number,
             ),
         ),
     )
@@ -429,8 +445,12 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
     attribute_definition <= (
         identifier + ~type_declaration + assignment_terminal + expression + semicolon,
         (
-            lambda s: AttributeDeclaration(s[0].lex, s[3], s[1]),
-            lambda s: AttributeDeclaration(s[0].lex, s[2]),
+            lambda s: AttributeDeclaration(
+                s[0].lex, s[3], s[1], line=s[0].line_number, column=s[0].column_number
+            ),
+            lambda s: AttributeDeclaration(
+                s[0].lex, s[2], line=s[0].line_number, column=s[0].column_number
+            ),
         ),
     )
     type_arguments <= (
@@ -441,8 +461,12 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
     type_inherits <= (
         inherits + identifier + ~inherits_declaration,
         (
-            lambda s: Inherits(s[1].lex, s[2]),
-            lambda s: Inherits(s[1].lex, []),
+            lambda s: Inherits(
+                s[1].lex, s[2], line=s[1].line_number, column=s[1].column_number
+            ),
+            lambda s: Inherits(
+                s[1].lex, [], line=s[1].line_number, column=s[1].column_number
+            ),
         ),
     )
 
@@ -470,10 +494,28 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + inline
         + statement,
         (
-            lambda s: FunctionDeclaration(s[0].lex, s[2], s[6], s[4]),
-            lambda s: FunctionDeclaration(s[0].lex, s[2], s[5]),
-            lambda s: FunctionDeclaration(s[0].lex, [], s[5], s[3]),
-            lambda s: FunctionDeclaration(s[0].lex, [], s[4]),
+            lambda s: FunctionDeclaration(
+                s[0].lex,
+                s[2],
+                s[6],
+                s[4],
+                line=s[0].line_number,
+                column=s[0].column_number,
+            ),
+            lambda s: FunctionDeclaration(
+                s[0].lex, s[2], s[5], line=s[0].line_number, column=s[0].column_number
+            ),
+            lambda s: FunctionDeclaration(
+                s[0].lex,
+                [],
+                s[5],
+                s[3],
+                line=s[0].line_number,
+                column=s[0].column_number,
+            ),
+            lambda s: FunctionDeclaration(
+                s[0].lex, [], s[4], line=s[0].line_number, column=s[0].column_number
+            ),
         ),
     )
 
@@ -485,20 +527,50 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + ~type_declaration
         + expression_block,
         (
-            lambda s: FunctionDeclaration(s[0].lex, s[2], s[5], s[4]),
-            lambda s: FunctionDeclaration(s[0].lex, s[2], s[4]),
-            lambda s: FunctionDeclaration(s[0].lex, [], s[4], s[3]),
-            lambda s: FunctionDeclaration(s[0].lex, [], s[3]),
+            lambda s: FunctionDeclaration(
+                s[0].lex,
+                s[2],
+                s[5],
+                s[4],
+                line=s[0].line_number,
+                column=s[0].column_number,
+            ),
+            lambda s: FunctionDeclaration(
+                s[0].lex, s[2], s[4], line=s[0].line_number, column=s[0].column_number
+            ),
+            lambda s: FunctionDeclaration(
+                s[0].lex,
+                [],
+                s[4],
+                s[3],
+                line=s[0].line_number,
+                column=s[0].column_number,
+            ),
+            lambda s: FunctionDeclaration(
+                s[0].lex, [], s[3], line=s[0].line_number, column=s[0].column_number
+            ),
         ),
     )
 
     argument_list_definition <= (
         ~(argument_list_definition + comma) + identifier + ~type_declaration,
         (
-            lambda s: s[0] + [Parameter(s[2].lex, s[3])],
-            lambda s: s[0] + [Parameter(s[2].lex)],
-            lambda s: [Parameter(s[0].lex, s[1])],
-            lambda s: [Parameter(s[0].lex)],
+            lambda s: s[0]
+            + [
+                Parameter(
+                    s[2].lex, s[3], line=s[2].line_number, column=s[2].column_number
+                )
+            ],
+            lambda s: s[0]
+            + [Parameter(s[2].lex, line=s[2].line_number, column=s[2].column_number)],
+            lambda s: [
+                Parameter(
+                    s[0].lex, s[1], line=s[0].line_number, column=s[0].column_number
+                )
+            ],
+            lambda s: [
+                Parameter(s[0].lex, line=s[0].line_number, column=s[0].column_number)
+            ],
         ),
     )
 
@@ -510,10 +582,18 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + ~protocol_body
         + close_brace,
         (
-            lambda s: ProtocolDeclaration(s[1].lex, s[2], s[4]),
-            lambda s: ProtocolDeclaration(s[1].lex, s[2], []),
-            lambda s: ProtocolDeclaration(s[1].lex, [], s[3]),
-            lambda s: ProtocolDeclaration(s[1].lex, [], []),
+            lambda s: ProtocolDeclaration(
+                s[1].lex, s[2], s[4], line=s[1].line_number, column=s[1].column_number
+            ),
+            lambda s: ProtocolDeclaration(
+                s[1].lex, s[2], [], line=s[1].line_number, column=s[1].column_number
+            ),
+            lambda s: ProtocolDeclaration(
+                s[1].lex, [], s[3], line=s[1].line_number, column=s[1].column_number
+            ),
+            lambda s: ProtocolDeclaration(
+                s[1].lex, [], [], line=s[1].line_number, column=s[1].column_number
+            ),
         ),
     )
 
@@ -538,26 +618,82 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + type_declaration
         + semicolon,
         (
-            lambda s: s[0] + [FunctionDeclaration(s[1].lex, s[3], None, s[5])],
-            lambda s: s[0] + [FunctionDeclaration(s[1].lex, [], None, s[4])],
-            lambda s: [FunctionDeclaration(s[0].lex, s[2], None, s[4])],
-            lambda s: [FunctionDeclaration(s[0].lex, [], None, s[3])],
+            lambda s: s[0]
+            + [
+                FunctionDeclaration(
+                    s[1].lex,
+                    s[3],
+                    None,
+                    s[5],
+                    line=s[1].line_number,
+                    column=s[1].column_number,
+                )
+            ],
+            lambda s: s[0]
+            + [
+                FunctionDeclaration(
+                    s[1].lex,
+                    [],
+                    None,
+                    s[4],
+                    line=s[1].line_number,
+                    column=s[1].column_number,
+                )
+            ],
+            lambda s: [
+                FunctionDeclaration(
+                    s[0].lex,
+                    s[2],
+                    None,
+                    s[4],
+                    line=s[1].line_number,
+                    column=s[1].column_number,
+                )
+            ],
+            lambda s: [
+                FunctionDeclaration(
+                    s[0].lex,
+                    [],
+                    None,
+                    s[3],
+                    line=s[1].line_number,
+                    column=s[1].column_number,
+                )
+            ],
         ),
     )
 
     protocol_arguments_definition <= (
         identifier + type_declaration + ~protocol_multiple_arguments_definition,
         (
-            lambda s: [Parameter(s[0].lex, s[1])] + s[2],
-            lambda s: [Parameter(s[0].lex, s[1])],
+            lambda s: [
+                Parameter(
+                    s[0].lex, s[1], line=s[0].line_number, column=s[0].column_number
+                )
+            ]
+            + s[2],
+            lambda s: [
+                Parameter(
+                    s[0].lex, s[1], line=s[0].line_number, column=s[0].column_number
+                )
+            ],
         ),
     )
 
     protocol_multiple_arguments_definition <= (
         comma + identifier + type_declaration + ~protocol_multiple_arguments_definition,
         (
-            lambda s: [Parameter(s[1].lex, s[2])] + s[3],
-            lambda s: [Parameter(s[1].lex, s[2])],
+            lambda s: [
+                Parameter(
+                    s[1].lex, s[2], line=s[1].line_number, column=s[1].column_number
+                )
+            ]
+            + s[3],
+            lambda s: [
+                Parameter(
+                    s[1].lex, s[2], line=s[1].line_number, column=s[1].column_number
+                )
+            ],
         ),
     )
 
@@ -631,10 +767,36 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + ~multiple_declaration
         + in_terminal,
         (
-            lambda s: [VariableDeclaration(s[1].lex, s[4], s[2])] + s[5],
-            lambda s: [VariableDeclaration(s[1].lex, s[4], s[2])],
-            lambda s: [VariableDeclaration(s[1].lex, s[3])] + s[4],
-            lambda s: [VariableDeclaration(s[1].lex, s[3])],
+            lambda s: [
+                VariableDeclaration(
+                    s[1].lex,
+                    s[4],
+                    s[2],
+                    line=s[1].line_number,
+                    column=s[1].column_number,
+                )
+            ]
+            + s[5],
+            lambda s: [
+                VariableDeclaration(
+                    s[1].lex,
+                    s[4],
+                    s[2],
+                    line=s[1].line_number,
+                    column=s[1].column_number,
+                )
+            ],
+            lambda s: [
+                VariableDeclaration(
+                    s[1].lex, s[3], line=s[1].line_number, column=s[1].column_number
+                )
+            ]
+            + s[4],
+            lambda s: [
+                VariableDeclaration(
+                    s[1].lex, s[3], line=s[1].line_number, column=s[1].column_number
+                )
+            ],
         ),
     )
 
@@ -646,10 +808,36 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + expression
         + ~multiple_declaration,
         (
-            lambda s: [VariableDeclaration(s[1].lex, s[4], s[2])] + s[5],
-            lambda s: [VariableDeclaration(s[1].lex, s[4], s[2])],
-            lambda s: [VariableDeclaration(s[1].lex, s[3])] + s[4],
-            lambda s: [VariableDeclaration(s[1].lex, s[3])],
+            lambda s: [
+                VariableDeclaration(
+                    s[1].lex,
+                    s[4],
+                    s[2],
+                    line=s[1].line_number,
+                    column=s[1].column_number,
+                )
+            ]
+            + s[5],
+            lambda s: [
+                VariableDeclaration(
+                    s[1].lex,
+                    s[4],
+                    s[2],
+                    line=s[1].line_number,
+                    column=s[1].column_number,
+                )
+            ],
+            lambda s: [
+                VariableDeclaration(
+                    s[1].lex, s[3], line=s[1].line_number, column=s[1].column_number
+                )
+            ]
+            + s[4],
+            lambda s: [
+                VariableDeclaration(
+                    s[1].lex, s[3], line=s[1].line_number, column=s[1].column_number
+                )
+            ],
         ),
     )
 
@@ -713,7 +901,12 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         identifier + destructive_assignment_terminal + expression
         | member_access + destructive_assignment_terminal + expression,
         (
-            lambda s: DestructiveAssign(Identifier(s[0].lex), s[2]),
+            lambda s: DestructiveAssign(
+                Identifier(s[0].lex, line=s[0].line_number, column=s[0].column_number),
+                s[2],
+                line=s[0].line_number,
+                column=s[0].column_number,
+            ),
             lambda s: DestructiveAssign(s[0], s[2]),
         ),
     )
@@ -826,7 +1019,9 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         (
             lambda s: s[0],
             lambda s: s[0],
-            lambda s: Identifier(s[0].lex),
+            lambda s: Identifier(
+                s[0].lex, line=s[0].line_number, column=s[0].column_number
+            ),
             lambda s: s[0],
             lambda s: s[0],
             lambda s: s[0],
@@ -838,7 +1033,14 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
 
     invocation_expression <= (
         identifier + open_parenthesis + ~argument_list + close_parenthesis,
-        (lambda s: Invocation(s[0].lex, s[2]), lambda s: Invocation(s[0].lex, [])),
+        (
+            lambda s: Invocation(
+                s[0].lex, s[2], line=s[0].line_number, column=s[0].column_number
+            ),
+            lambda s: Invocation(
+                s[0].lex, [], line=s[0].line_number, column=s[0].column_number
+            ),
+        ),
     )
 
     argument_list <= (
@@ -851,7 +1053,7 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
 
     vector <= (
         open_bracket + vector_element + close_bracket,
-        (lambda s: Vector(s[1])),
+        (lambda s: Vector(s[1], line=s[1][0].line, column=s[1][0].column)),
     )
 
     comprehension_vector <= (
@@ -862,7 +1064,11 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
         + in_terminal
         + expression
         + close_bracket,
-        (lambda s: ComprehensionVector(s[1], s[3].lex, s[5])),
+        (
+            lambda s: ComprehensionVector(
+                s[1], s[3].lex, s[5], line=s[3].line_number, column=s[3].column_number
+            )
+        ),
     )
 
     vector_element <= (
@@ -874,30 +1080,50 @@ def get_hulk_grammar() -> tuple[Grammar, dict]:
     )
     indexed_value <= (
         primary_expression + open_bracket + primary_expression + close_bracket,
-        (lambda s: IndexNode(s[0], s[2])),
+        (lambda s: IndexNode(s[0], s[2], line=s[0].line, column=s[0].column)),
     )
 
     member_access <= (
         primary_expression + dot + identifier
         | primary_expression + dot + invocation_expression,
         (
-            lambda s: AttributeCall(s[0], s[2].lex),
-            lambda s: FunctionCall(s[0], s[2]),
+            lambda s: AttributeCall(
+                s[0], s[2].lex, line=s[2].line_number, column=s[2].column_number
+            ),
+            lambda s: FunctionCall(s[0], s[2], line=s[0].line, column=s[0].column),
         ),
     )
 
     instantiation <= (
         new + invocation_expression,
-        (lambda s: Instanciate(s[1].identifier, s[1].arguments)),
+        (
+            lambda s: Instanciate(
+                s[1].identifier, s[1].arguments, line=s[1].line, column=s[1].column
+            )
+        ),
     )
 
     literal <= (
         number | string | true | false,
         (
-            lambda s: LiteralNode(s[0].lex, NumberType()),
-            lambda s: LiteralNode(s[0].lex, StringType()),
-            lambda s: LiteralNode(s[0].lex, BooleanType()),
-            lambda s: LiteralNode(s[0].lex, BooleanType()),
+            lambda s: LiteralNode(
+                s[0].lex, NumberType(), line=s[0].line_number, column=s[0].column_number
+            ),
+            lambda s: LiteralNode(
+                s[0].lex, StringType(), line=s[0].line_number, column=s[0].column_number
+            ),
+            lambda s: LiteralNode(
+                s[0].lex,
+                BooleanType(),
+                line=s[0].line_number,
+                column=s[0].column_number,
+            ),
+            lambda s: LiteralNode(
+                s[0].lex,
+                BooleanType(),
+                line=s[0].line_number,
+                column=s[0].column_number,
+            ),
         ),
     )
 

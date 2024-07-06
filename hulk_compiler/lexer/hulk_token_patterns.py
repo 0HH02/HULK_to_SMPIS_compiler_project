@@ -32,7 +32,7 @@ TOKEN_PATTERNS = [
     TokenPattern("in", TokenType.IN, _NOT_LETTER_OR_UNDERSCORE),
     TokenPattern("=>", TokenType.ARROW_OPERATOR),
     TokenPattern("==", TokenType.EQUAL),
-    TokenPattern("=", TokenType.ASSIGNMENT, "[^(=|>)]"),
+    TokenPattern("=", TokenType.ASSIGNMENT, "[^=>]"),
     TokenPattern(":=", TokenType.DESTRUCTIVE_ASSIGNMENT),
     TokenPattern("new", TokenType.NEW, _NOT_LETTER_OR_UNDERSCORE),
     TokenPattern("as", TokenType.AS, _NOT_LETTER_OR_UNDERSCORE),

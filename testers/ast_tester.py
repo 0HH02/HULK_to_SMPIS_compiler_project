@@ -33,14 +33,13 @@ def test_all() -> None:
         # Get the full path to the file
         file_path: str = os.path.join(TEST_FOLDER, filename)
         # Open the file and read its contents
-        valid_programs = True
         with open(file_path, "r", encoding="utf-8") as file:
             program: str = file.read()
             try:
                 tokens: list[Token] = lexer.tokenize(program)
                 ast: ASTNode = parser.parse(tokens)
                 print(f"AST for file: {file_path}")
-                valid_programs &= check_semantic(ast)
+                valid_programs = check_semantic(ast, program)
                 ASTPrinter.print(ast)
             except:
                 print(f"Error in file: {file_path}")
@@ -62,7 +61,7 @@ def test_single(num: int):
         tokens = lexer.tokenize(program)
         ast = parser.parse(tokens)
         print(f"AST for file {num}:")
-        valid_program &= check_semantic(ast)
+        valid_program &= check_semantic(ast, program)
         ASTPrinter.print(ast)
     print(valid_program)
 
