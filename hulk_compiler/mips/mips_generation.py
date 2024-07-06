@@ -1,5 +1,6 @@
 from .mips_nodes import *
 from queue import Queue
+from hulk_compiler.semantic_analizer.types import NumberType, StringType, Type
 
 
 from hulk_compiler.code_generation.cil_generation.cil_nodes import (
@@ -53,6 +54,10 @@ class CilToMipsVisitor:
             "$t7",
             "$t8",
             "$t9",
+            "$v0",
+            "$a1",
+            "$a2",
+            "$s0",
         ]
         # Queue of (registers, variable_name) tuples
         self.registers_queue: Queue[(str, str)] = Queue()
@@ -67,6 +72,42 @@ class CilToMipsVisitor:
 
         for data in node.dotdata:
             self.data.append(str(MipsData(data.dest, data.list)))
+
+        # Add build-in functions
+        self.functions.append(
+            str(
+                MipsFunction(
+                    "int_to_str",
+                    [
+                        StoreWord("$ra", "16($sp)"),
+                        StoreWord("$t1", "12($sp)"),
+                        StoreWord("$t2", "8($sp)"),
+                        StoreWord("$t3", "4($sp)"),
+                        LoadConstant("$v0", 9),
+                        LoadConstant("$a0", 16),
+                        "syscall",
+                        Move("$t1", "$v0"),
+                        LoadConstant("$t0", 10),
+                        Label("convert"),
+                        Operation("$t2", "$t0", "$t2", "div"),
+                        MoveFromHi("$t3"),
+                        MoveFromLo("$t0"),
+                        LoadConstant("$t3", 48),
+                        StoreByte("$t3", "0($t1)"),
+                        OperationInmediate("$t1", "$t1", -1, "addi"),
+                        BranchOnNotEqualZero("$t0", "convert"),
+                        OperationInmediate("$t1", "$t1", 1, "addi"),
+                        Move("$v0", "$t1"),
+                        LoadWord("$ra", "16($sp)"),
+                        LoadWord("$t1", "12($sp)"),
+                        LoadWord("$t2", "8($sp)"),
+                        LoadWord("$t3", "4($sp)"),
+                        OperationInmediate("$sp", "$sp", 20, "addi"),
+                        JumpRegister("$ra"),
+                    ],
+                )
+            )
+        )
 
         for function in node.dotcode:
             self.functions.append(str(self.visit(function)))
@@ -213,13 +254,22 @@ class CilToMipsVisitor:
 
     @dispatch(ConcatNode)
     def visit(self, node: ConcatNode) -> Operation:
-        if "data" in node.left:
-            left = node.left
+        instructions = []
+        if node.left_type is NumberType():
+            instructions.append(LoadConstant("$a0", node.left))
+            instructions.append(JumpAtLabel("int_to_str"))
+            dest1, instructions = self.get_variable(node.left)
         else:
-            self.data.append(str(MipsData(node.left, node.left.value)))
-        if "data" in node.right:
-            right = node.right
+            dest1 = node.left
+        if node.right_type is NumberType():
+            instructions.append(LoadConstant("$a0", node.right))
+            instructions.append(JumpAtLabel("int_to_str"))
+            dest2, instructions = self.get_variable(node.right)
         else:
+            dest2 = node.right
+        dest3, instructions = self.set_variable(node.dest)
+        # Aqui va el codigo para concatenar strings
+        return MipsConcat(dest3, dest1, dest2)
 
     def set_variable(self, variable: str) -> str:
         instruccions = []

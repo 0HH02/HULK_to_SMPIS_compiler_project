@@ -388,6 +388,17 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         result = self.register_local(
             IdentifierVar(f"value_{len(self.current_function.localvars)}", None)
         )
+        if OPER_TO_CLASS[node.operator] is ConcatNode:
+            self.register_instruction(
+                OPER_TO_CLASS[node.operator](
+                    result,
+                    left,
+                    node.left.inferred_type,
+                    right,
+                    node.right.inferred_type,
+                )
+            )
+            return result
         self.register_instruction(OPER_TO_CLASS[node.operator](result, left, right))
         return result
 

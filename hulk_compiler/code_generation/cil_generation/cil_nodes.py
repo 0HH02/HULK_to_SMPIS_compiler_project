@@ -221,10 +221,12 @@ class LengthNode(InstructionNode):
 
 
 class ConcatNode(InstructionNode):
-    def __init__(self, dest, left, right):
+    def __init__(self, dest, left, left_type, right, right_type):
         self.dest = dest
         self.left = left
+        self.left_type = left_type
         self.right = right
+        self.right_type = right_type
 
 
 class IsNode(InstructionNode):

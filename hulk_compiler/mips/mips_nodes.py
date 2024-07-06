@@ -139,6 +139,17 @@ class BranchOnEqualZero(Node):
         return str(self)
 
 
+class JumpAtLabel(Node):
+    def __init__(self, label) -> None:
+        self.label = label
+
+    def __str__(self) -> str:
+        return f"jal {self.label}"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
 class Move(Node):
     def __init__(self, destini, source) -> None:
         self.destini = destini
@@ -146,6 +157,28 @@ class Move(Node):
 
     def __str__(self) -> str:
         return f"move {self.destini}, {self.source}"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+class MoveFromHi(Node):
+    def __init__(self, source) -> None:
+        self.source = source
+
+    def __str__(self) -> str:
+        return f"mfhi {self.source}"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+class MoveFromLo(Node):
+    def __init__(self, source) -> None:
+        self.source = source
+
+    def __str__(self) -> str:
+        return f"mflo {self.source}"
 
     def __repr__(self) -> str:
         return str(self)
@@ -312,36 +345,61 @@ class MipsData(Node):
 
 
 class MipsConcat(Node):
-    def __init__(self, t0, t1, t2, buffer, op1, op2) -> None:
-        self.t0 = t0
-        self.t1 = t1
-        self.t2 = t2
-        self.buffer = buffer
+    def __init__(self, dest, op1, op2) -> None:
         self.op1 = op1
         self.op2 = op2
+        self.dest = dest
 
     def __str__(self) -> str:
         instructions = []
-        instructions.append(LoadString(self.t0, self.op1))
-        instructions.append(LoadString(self.t1, self.buffer))
-        instructions.append(Label("copy_str1"))
-        instructions.append(LoadByte(self.t2, f"0({self.t0})"))
-        instructions.append(BranchOnEqualZero(self.t2, "find_end"))
-        instructions.append(StoreByte(self.t2, f"0({self.t1})"))
-        instructions.append(OperationInmediate(self.t0, self.t0, 1, "addi"))
-        instructions.append(OperationInmediate(self.t1, self.t1, 1, "addi"))
-        instructions.append(JumpLabel("copy_str1"))
-        instructions.append(Label("find_end"))
-        instructions.append(LoadString(self.t0, self.op2))
+        instructions.append(StoreWord("$a0", "4($sp)"))
+        instructions.append(StoreWord("$s0", "8($sp)"))
+        instructions.append(StoreWord("$t0", "12($sp)"))
+        instructions.append(StoreWord("$t1", "16($sp)"))
+        instructions.append(StoreWord("$t2", "20($sp)"))
+        instructions.append(StoreWord("$t3", "24($sp)"))
+        instructions.append(StoreWord("$a1", "28($sp)"))
+        instructions.append(LoadConstant("$v0", 9))
+        instructions.append(LoadConstant("$a0", 256))
+        instructions.append("syscall")
+        instructions.append(Move("$s0", "$v0"))
+        instructions.append(LoadString("$a0", self.op1))
+        instructions.append(LoadString("$a1", self.op2))
+        instructions.append(JumpAtLabel("concatenate_strings"))
+
+        instructions.append(LoadConstant("$v0", 10))
+        instructions.append(Move(self.dest, "$t0"))
+
+        instructions.append(StoreWord("$a0", "4($sp)"))
+        instructions.append(StoreWord("$s0", "8($sp)"))
+        instructions.append(StoreWord("$t0", "12($sp)"))
+        instructions.append(StoreWord("$t1", "16($sp)"))
+        instructions.append(StoreWord("$t2", "20($sp)"))
+        instructions.append(StoreWord("$t3", "24($sp)"))
+        instructions.append(StoreWord("$a1", "28($sp)"))
+        instructions.append("syscall")
+
+        instructions.append(Label("concatenate_strings"))
+        instructions.append(Move("$t0", "$s0"))
+        instructions.append(Label("loop1"))
+        instructions.append(LoadByte("$t1", "$a0"))
+        instructions.append(BranchOnEqualZero("$t1", "copy_str2"))
+        instructions.append(StoreByte("$t1", "$t0"))
+        instructions.append(OperationInmediate("$a0", "$a0", 1, "addi"))
+        instructions.append(OperationInmediate("$t0", "$t0", 1, "addi"))
+        instructions.append(JumpLabel("loop1"))
         instructions.append(Label("copy_str2"))
-        instructions.append(LoadByte(self.t2, f"0({self.t0})"))
-        instructions.append(BranchOnEqualZero(self.t2, "add_null"))
-        instructions.append(StoreByte(self.t2, f"0({self.t1})"))
-        instructions.append(OperationInmediate(self.t0, self.t0, 1, "addi"))
-        instructions.append(OperationInmediate(self.t1, self.t1, 1, "addi"))
-        instructions.append(JumpLabel("copy_str2"))
-        instructions.append(Label("add_null"))
-        instructions.append(StoreByte("$zero", f"0({self.t1})"))
+        instructions.append(Label("loop2"))
+        instructions.append(LoadByte("$t1", "$a1"))
+        instructions.append(StoreByte("$t1", "$t0"))
+        instructions.append(BranchOnEqualZero("$t1", "end_concat"))
+        instructions.append(OperationInmediate("$a1", "$a1", 1, "addi"))
+        instructions.append(OperationInmediate("$t0", "$t0", 1, "addi"))
+        instructions.append(JumpLabel("loop2"))
+        instructions.append(Label("end_concat"))
+        instructions.append(StoreByte("$zero", "$t0"))
+        instructions.append(JumpRegister("$ra"))
+
         return "\n".join(map(str, instructions))
 
     def __repr__(self) -> str:
