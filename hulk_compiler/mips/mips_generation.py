@@ -211,16 +211,6 @@ class CilToMipsVisitor:
         source, instruction = self.get_variable(node.source)
         return Move(dest, source)
 
-    @dispatch(ConcatNode)
-    def visit(self, node: ConcatNode) -> Operation:
-        if "data" in node.left:
-            left = node.left
-        else:
-            self.data.append(str(MipsData(node.left, node.left.value)))
-        if "data" in node.right:
-            right = node.right
-        else:
-
     def set_variable(self, variable: str) -> str:
         instruccions = []
         if (

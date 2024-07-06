@@ -24,7 +24,7 @@ from testers.semantic_analizer import (
     AST8,
     AST9,
 )
-from hulk_compiler.mips.mips_generation import CilToMipsVisitor
+from hulk_compiler.code_generation.cil_interprete import cil_interpreter
 
 
 def test_all() -> None:
@@ -57,7 +57,8 @@ def test_all() -> None:
                 print(PrintVisitor().visit_node(cil_ast))
                 print("\n=========================================================\n")
 
-                mips_ast = CilToMipsVisitor().visit(cil_ast)
+                # mips_ast = CilToMipsVisitor().visit(cil_ast)
+                cil_interpreter().visit(cil_ast)
 
             except:
                 print(f"Error in file: {file_path}")

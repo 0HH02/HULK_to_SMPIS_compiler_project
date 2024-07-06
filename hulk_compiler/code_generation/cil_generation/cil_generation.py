@@ -425,7 +425,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
     def visit_node(self, node: DestructiveAssign, context: Context):
         result = self.visit_node(node.identifier, context.create_child_context())
         value = self.visit_node(node.expression, context.create_child_context())
-        self.register_instruction(AssignNode(result, value))
+        self.register_instruction(MoveNode(result, value))
         return result
 
     @dispatch(If, Context)
