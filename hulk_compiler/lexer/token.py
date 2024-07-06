@@ -16,7 +16,7 @@ class Token:
         token_type (str): The type of the token.
     """
 
-    def __init__(self, lex, token_type, line_number, column_number):
+    def __init__(self, lex, token_type, line_number=-1, column_number=-1):
         self.lex: str = lex
         self.token_type: TokenType = token_type
         self.line_number: int = line_number
@@ -120,6 +120,29 @@ class TokenType(Enum):
     MULTI_LINE_COMMENT_END = auto()
     EOF = auto()
     DOUBLE_PIPE = auto()
+
+
+class RegexTokenType(Enum):
+    PLUS = auto()
+    OR = auto()
+    OPTIONAL = auto()
+    RANGE = auto()
+    NOT = auto()
+    DOT = auto()
+    LINE_START = auto()
+    STRING_END = auto()
+    SPECIAL = auto()
+    LPAREN = auto()
+    RPAREN = auto()
+    LBRACKET = auto()
+    RBRACKET = auto()
+    LBRACE = auto()
+    RBRACE = auto()
+    LETTER = auto()
+    NUMBER = auto()
+    SYMBOL = auto()
+
+    EOF = auto()
 
 
 class TokenPattern:

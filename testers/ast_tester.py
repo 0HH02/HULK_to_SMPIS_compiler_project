@@ -84,7 +84,7 @@ def test_single(num: int):
         tokens = lexer.tokenize(program)
         ast = parser.parse(tokens)
         print(f"AST for file {num}:")
-        valid_program &= check_semantic(ast)
+        valid_program &= check_semantic(ast, program)
         ASTPrinter.print(ast)
     print(valid_program)
 
