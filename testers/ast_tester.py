@@ -13,7 +13,18 @@ from hulk_compiler.parser.ast.ast_printer import ASTPrinter
 from hulk_compiler.semantic_analizer.semantic_analizer import check_semantic
 from hulk_compiler.code_generation.cil_generation.cil_generation import HULKToCILVisitor
 from hulk_compiler.code_generation.cil_generation.cil_nodes import PrintVisitor
-from testers.semantic_analizer import AST1
+from testers.semantic_analizer import (
+    AST1,
+    AST2,
+    AST3,
+    AST4,
+    AST5,
+    AST6,
+    AST7,
+    AST8,
+    AST9,
+)
+from hulk_compiler.code_generation.cil_interprete import cil_interpreter
 
 
 def test_all() -> None:
@@ -26,12 +37,11 @@ def test_all() -> None:
 
     # Get the path to the test folder
     TEST_FOLDER = "testers/test"
-
     # Iterate over all files in the test folder
     for filename in os.listdir(TEST_FOLDER):
-        input()
         # Get the full path to the file
         file_path: str = os.path.join(TEST_FOLDER, filename)
+
         # Open the file and read its contents
         with open(file_path, "r", encoding="utf-8") as file:
             program: str = file.read()
@@ -39,13 +49,21 @@ def test_all() -> None:
                 tokens: list[Token] = lexer.tokenize(program)
                 ast: ASTNode = parser.parse(tokens)
                 print(f"AST for file: {file_path}")
-                valid_programs = check_semantic(ast, program)
                 ASTPrinter.print(ast)
+                print("\n=========================================================\n")
+                # check_semantic(ast)
+
+                cil_ast = HULKToCILVisitor().visit_node(ast)
+                print(PrintVisitor().visit_node(cil_ast))
+                print("\n=========================================================\n")
+
+                # mips_ast = CilToMipsVisitor().visit(cil_ast)
+                cil_interpreter().visit(cil_ast)
+
             except:
                 print(f"Error in file: {file_path}")
                 raise
-
-        print(valid_programs)
+            input()
 
 
 def test_single(num: int):
@@ -67,5 +85,5 @@ def test_single(num: int):
 
 
 def hulk_to_CIL_test():
-    cil_ast = HULKToCILVisitor().visit_node(AST1)
-    PrintVisitor().visit_node(cil_ast)
+    cil_ast = HULKToCILVisitor().visit_node(AST9)
+    print(PrintVisitor().visit_node(cil_ast))

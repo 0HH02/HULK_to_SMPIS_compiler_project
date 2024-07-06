@@ -7,7 +7,7 @@ class BaseHULKToCILVisitor:
         self.dottypes = []
         self.dotdata = []
         self.dotcode = []
-        self.current_type = None
+        self.current_type: TypeNode = None
         self.current_method = None
         self.current_function = None
         # self.context = context
@@ -36,6 +36,10 @@ class BaseHULKToCILVisitor:
         vinfo = IdentifierVar("internal", None)
         return self.register_local(vinfo)
 
+    def define_type_local(self, name: str):
+        name = f"local_{self.current_type.name}_{name}"
+        return name
+
     def register_instruction(self, instruction):
         self.instructions.append(instruction)
         return instruction
@@ -55,6 +59,6 @@ class BaseHULKToCILVisitor:
 
     def register_data(self, value):
         vname = f"data_{len(self.dotdata)}"
-        data_node = DataNode(vname, value)
+        data_node = ArrayNode(value, vname)
         self.dotdata.append(data_node)
         return data_node
