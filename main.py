@@ -5,6 +5,8 @@ from hulk_compiler.semantic_analizer.semantic_analizer import check_semantic
 from hulk_compiler.lexer.hulk_token_patterns import TOKEN_PATTERNS
 from hulk_compiler.lexer.hulk_constants import HULK_CONSTANTS
 from hulk_compiler.parser.grammar.hulk import get_hulk_grammar
+from hulk_compiler.code_generation.cil_generation.cil_generation import HULKToCILVisitor
+from hulk_compiler.code_generation.cil_interprete import cil_interpreter
 
 
 def main(path: str):
@@ -17,4 +19,5 @@ def main(path: str):
         ast = parser.parse(tokens)
         valid_program: bool = check_semantic(ast, code)
         if valid_program:
-            
+            cil_ast = HULKToCILVisitor().generate_cil(ast)
+            cil_interpreter().visit(cil_ast)
