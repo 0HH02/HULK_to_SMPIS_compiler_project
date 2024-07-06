@@ -51,12 +51,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
     @dispatch(Program)
     def generate_cil(self, node: Program, context: Context = Context()):
-        # self.buildin_types(node)
-    def visit_node(self, node: Program, context: Context = Context()):
         self.buildin_types(node)
-        ######################################################
-        # node.declarations -> [ ClassDeclarationNode ... ]
-        ######################################################
 
         main = Type("main")
         self.current_function = None
@@ -369,10 +364,10 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
             self.register_instruction(PrintNode(result))
             return result
         if node.identifier == "range":
-            min_value = self.visit_node(
+            min_value = self.generate_cil(
                 node.arguments[0], context.create_child_context()
             )
-            max_value = self.visit_node(
+            max_value = self.generate_cil(
                 node.arguments[1], context.create_child_context()
             )
             instance = self.register_local(IdentifierVar("range", None))
@@ -492,18 +487,20 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
                 elif_node.condition, context.create_child_context()
             )
             self.register_instruction(GotoIfNode(condition, "if_true_" + str(i)))
-        if_result = self.visit_node(node.else_body, context.create_child_context())
+        if_result = self.generate_cil(node.else_body, context.create_child_context())
         self.register_instruction(MoveNode(result, if_result))
         self.register_instruction(GotoNode("if_end"))
 
         # body
         self.register_instruction(LabelNode("if_true"))
-        if_result = self.visit_node(node.body, context.create_child_context())
+        if_result = self.generate_cil(node.body, context.create_child_context())
         self.register_instruction(MoveNode(result, if_result))
         self.register_instruction(GotoNode("if_end"))
         for i, elif_node in enumerate(node.elif_clauses):
             self.register_instruction(LabelNode("if_true_" + str(i)))
-            if_result = self.visit_node(elif_node.body, context.create_child_context())
+            if_result = self.generate_cil(
+                elif_node.body, context.create_child_context()
+            )
             self.register_instruction(MoveNode(result, if_result))
             self.register_instruction(LabelNode("if_end"))
 

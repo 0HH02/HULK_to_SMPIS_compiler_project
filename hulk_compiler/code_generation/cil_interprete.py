@@ -2,6 +2,7 @@ import math
 from multipledispatch import dispatch
 from hulk_compiler.code_generation.cil_generation.cil_nodes import *
 from hulk_compiler.code_generation.cil_generation.cil_nodes import FunctionNode
+from hulk_compiler.semantic_analizer.types import Type
 
 # pylint: disable=undefined-variable
 # pylint: disable=function-redefined
@@ -15,11 +16,13 @@ class cil_interpreter:
     def __init__(self) -> None:
         self.data = {}
         self.locals = {}
+        self.types = {}
         self.args = []
         self.functions = []
         self.return_var = None
         self.program_counter = {}
         self.current_function = None
+        self.current_type: Type = None
         self.function_labels: dict[str, dict[str, int]] = {}
 
     @dispatch(ProgramNode)
@@ -190,3 +193,19 @@ class cil_interpreter:
     @dispatch(LabelNode)
     def visit(self, node: LabelNode):
         pass
+
+    @dispatch(AllocateNode)
+    def visit(self, node: AllocateNode):
+        self.types[node.type] = Type(node.type)
+        self.locals[node.dest] = self.types[node.type]
+
+    @dispatch(DynamicCallNode)
+    def visit(self, node: DynamicCallNode):
+        self.current_type = self.types[node.type]
+        funct: FunctionNode = [f for f in self.functions if node.method in f.name][0]
+        self.visit(funct)
+        self.locals[node.dest] = self.locals[self.return_var]
+
+    @dispatch(SetAttribNode)
+    def visit(self, node: SetAttribNode):
+        self.current_type.attributes[node.attr] = self.locals[node.value]

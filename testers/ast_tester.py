@@ -56,7 +56,7 @@ def test_all() -> None:
                     )
                     # check_semantic(ast)
 
-                    cil_ast = HULKToCILVisitor().visit_node(ast)
+                    cil_ast = HULKToCILVisitor().generate_cil(ast)
                     print(PrintVisitor().visit_node(cil_ast))
                     print(
                         "\n=========================================================\n"
