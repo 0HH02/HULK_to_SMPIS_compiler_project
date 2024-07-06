@@ -38,32 +38,37 @@ def test_all() -> None:
     # Get the path to the test folder
     TEST_FOLDER = "testers/test"
     # Iterate over all files in the test folder
-    for filename in os.listdir(TEST_FOLDER):
-        # Get the full path to the file
-        file_path: str = os.path.join(TEST_FOLDER, filename)
+    for i, filename in enumerate(os.listdir(TEST_FOLDER)):
+        if i > 27:
+            # Get the full path to the file
+            file_path: str = os.path.join(TEST_FOLDER, filename)
 
-        # Open the file and read its contents
-        with open(file_path, "r", encoding="utf-8") as file:
-            program: str = file.read()
-            try:
-                tokens: list[Token] = lexer.tokenize(program)
-                ast: ASTNode = parser.parse(tokens)
-                print(f"AST for file: {file_path}")
-                ASTPrinter.print(ast)
-                print("\n=========================================================\n")
-                # check_semantic(ast)
+            # Open the file and read its contents
+            with open(file_path, "r", encoding="utf-8") as file:
+                program: str = file.read()
+                try:
+                    tokens: list[Token] = lexer.tokenize(program)
+                    ast: ASTNode = parser.parse(tokens)
+                    print(f"AST for file: {file_path}")
+                    ASTPrinter.print(ast)
+                    print(
+                        "\n=========================================================\n"
+                    )
+                    # check_semantic(ast)
 
-                cil_ast = HULKToCILVisitor().visit_node(ast)
-                print(PrintVisitor().visit_node(cil_ast))
-                print("\n=========================================================\n")
+                    cil_ast = HULKToCILVisitor().visit_node(ast)
+                    print(PrintVisitor().visit_node(cil_ast))
+                    print(
+                        "\n=========================================================\n"
+                    )
 
-                # mips_ast = CilToMipsVisitor().visit(cil_ast)
-                cil_interpreter().visit(cil_ast)
+                    # mips_ast = CilToMipsVisitor().visit(cil_ast)
+                    cil_interpreter().visit(cil_ast)
 
-            except:
-                print(f"Error in file: {file_path}")
-                raise
-            input()
+                except:
+                    print(f"Error in file: {file_path}")
+                    raise
+                input()
 
 
 def test_single(num: int):

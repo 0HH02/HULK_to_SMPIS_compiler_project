@@ -54,7 +54,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
     @dispatch(Program)
     def visit_node(self, node: Program, context: Context = Context()):
-        # self.buildin_types(node)
+        self.buildin_types(node)
         ######################################################
         # node.declarations -> [ ClassDeclarationNode ... ]
         ######################################################
@@ -87,11 +87,35 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
                 [
                     AttributeDeclaration("min", Identifier("min")),
                     AttributeDeclaration("max", Identifier("max")),
+                    AttributeDeclaration(
+                        "current",
+                        BinaryExpression(
+                            Operator.SUB,
+                            Identifier("min"),
+                            LiteralNode("1", NumberType()),
+                        ),
+                    ),
                 ],
                 [
-                    FunctionDeclaration("current", [], LiteralNode("1", None)),
-                    FunctionDeclaration("next", [], LiteralNode("2", None)),
-                    FunctionDeclaration("get_item", [], LiteralNode("2", None)),
+                    FunctionDeclaration(
+                        "current", [], AttributeCall(Identifier("self"), "current")
+                    ),
+                    FunctionDeclaration(
+                        "next",
+                        [],
+                        BinaryExpression(
+                            Operator.LT,
+                            DestructiveAssign(
+                                AttributeCall(Identifier("self"), "current"),
+                                BinaryExpression(
+                                    Operator.ADD,
+                                    AttributeCall(Identifier("self"), "current"),
+                                    LiteralNode("1", NumberType()),
+                                ),
+                            ),
+                            AttributeCall(Identifier("self"), "max"),
+                        ),
+                    ),
                 ],
             )
         )
@@ -108,6 +132,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
                 [
                     FunctionDeclaration("current", [], LiteralNode("1", None)),
                     FunctionDeclaration("next", [], LiteralNode("2", None)),
+                    FunctionDeclaration("get_item", [], LiteralNode("2", None)),
                 ],
             )
         )
@@ -342,6 +367,22 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
             result = self.visit_node(node.arguments[0], context.create_child_context())
             self.register_instruction(PrintNode(result))
             return result
+        if node.identifier == "range":
+            min_value = self.visit_node(
+                node.arguments[0], context.create_child_context()
+            )
+            max_value = self.visit_node(
+                node.arguments[1], context.create_child_context()
+            )
+            instance = self.register_local(IdentifierVar("range", None))
+            self.register_instruction(AllocateNode("range", instance))
+            self.register_instruction(ArgNode(min_value))
+            self.register_instruction(ArgNode(max_value))
+            result = self.register_local(IdentifierVar("cache", None))
+            self.register_instruction(
+                DynamicCallNode("range", "range_constructor", result)
+            )
+            return instance
 
         # Falta por implementar: Guardar en el contexto las funciones a medida que las voy declarando y aquí solamente devuelvo la referencia a la función
         args = [
@@ -425,7 +466,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         self.register_instruction(LabelNode("while_condition"))
         condition = self.visit_node(node.condition, context.create_child_context())
         self.register_instruction(GotoIfNode(condition, "while_start"))
-        self.register_instruction(GotoIfNode(condition, "while_end"))
+        self.register_instruction(GotoNode("while_end"))
         self.register_instruction(LabelNode("while_start"))
         result = self.visit_node(node.body, context.create_child_context())
         self.register_instruction(GotoNode("while_condition"))
@@ -451,17 +492,18 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
             )
             self.register_instruction(GotoIfNode(condition, "if_true_" + str(i)))
         if_result = self.visit_node(node.else_body, context.create_child_context())
-        self.register_instruction(AssignNode(result, if_result))
+        self.register_instruction(MoveNode(result, if_result))
+        self.register_instruction(GotoNode("if_end"))
 
         # body
         self.register_instruction(LabelNode("if_true"))
         if_result = self.visit_node(node.body, context.create_child_context())
-        self.register_instruction(AssignNode(result, if_result))
+        self.register_instruction(MoveNode(result, if_result))
         self.register_instruction(GotoNode("if_end"))
         for i, elif_node in enumerate(node.elif_clauses):
             self.register_instruction(LabelNode("if_true_" + str(i)))
             if_result = self.visit_node(elif_node.body, context.create_child_context())
-            self.register_instruction(AssignNode(result, if_result))
+            self.register_instruction(MoveNode(result, if_result))
             self.register_instruction(LabelNode("if_end"))
 
         self.register_instruction(LabelNode("if_end"))

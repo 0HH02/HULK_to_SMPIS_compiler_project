@@ -18,6 +18,9 @@ class cil_interpreter:
         self.args = []
         self.functions = []
         self.return_var = None
+        self.program_counter = {}
+        self.current_function = None
+        self.function_labels: dict[str, dict[str, int]] = {}
 
     @dispatch(ProgramNode)
     def visit(self, node: ProgramNode):
@@ -29,12 +32,20 @@ class cil_interpreter:
 
     @dispatch(FunctionNode)
     def visit(self, node: FunctionNode):
+        self.current_function: str = node.name
+        self.program_counter[node.name] = 0
+        self.function_labels[node.name] = {}
         for i, param in enumerate(node.params[1:]):
             self.locals[param.name] = self.locals[self.args[i]]
         self.args = []
 
-        for instr in node.instructions:
-            self.visit(instr)
+        for i, instr in enumerate(node.instructions):
+            if isinstance(instr, LabelNode):
+                self.function_labels[node.name][instr.name] = i
+
+        while self.program_counter[node.name] < len(node.instructions):
+            self.visit(node.instructions[self.program_counter[node.name]])
+            self.program_counter[node.name] += 1
 
     @dispatch(AssignNode)
     def visit(self, node: AssignNode):
@@ -144,7 +155,6 @@ class cil_interpreter:
                 self.locals[self.args[0]], self.locals[self.args[1]]
             )
             self.args = []
-
         else:
             funct: FunctionNode = [
                 f for f in self.functions if node.function in f.name
@@ -163,3 +173,20 @@ class cil_interpreter:
         else:
             source = self.locals[node.source]
         self.locals[node.dest] = source
+
+    @dispatch(GotoIfNode)
+    def visit(self, node: GotoIfNode):
+        if self.locals[node.condicion]:
+            self.program_counter[self.current_function] = self.function_labels[
+                self.current_function
+            ][node.label_name]
+
+    @dispatch(GotoNode)
+    def visit(self, node: GotoNode):
+        self.program_counter[self.current_function] = self.function_labels[
+            self.current_function
+        ][node.label_name]
+
+    @dispatch(LabelNode)
+    def visit(self, node: LabelNode):
+        pass
