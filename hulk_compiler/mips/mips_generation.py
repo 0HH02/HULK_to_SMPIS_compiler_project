@@ -260,16 +260,18 @@ class CilToMipsVisitor:
             instructions.append(JumpAtLabel("int_to_str"))
             dest1, instructions = self.get_variable(node.left)
         else:
-            dest1 = node.left
+            # dest1, instructions = self.get_variable(node.left)
+            instructions.append(LoadString("$a1", node.left))
         if node.right_type is NumberType():
             instructions.append(LoadConstant("$a0", node.right))
             instructions.append(JumpAtLabel("int_to_str"))
             dest2, instructions = self.get_variable(node.right)
         else:
-            dest2 = node.right
+            dest2, instructions = self.get_variable(node.right)
+            instructions.append(LoadString(dest2, node.left))
         dest3, instructions = self.set_variable(node.dest)
         # Aqui va el codigo para concatenar strings
-        return MipsConcat(dest3, dest1, dest2)
+        return MipsConcat(dest3, "$a1", dest2)
 
     def set_variable(self, variable: str) -> str:
         instruccions = []
