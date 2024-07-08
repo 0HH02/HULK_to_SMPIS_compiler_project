@@ -181,18 +181,18 @@ class ParserLR1:
                 if len(new_kernel) == 0:
                     continue
 
-                new_kernel = frozenset(new_kernel)
+                frozen_new_kernel = frozenset(new_kernel)
 
-                if new_kernel in states_kernels:
+                if frozen_new_kernel in states_kernels:
                     if count in go_to:
-                        go_to[count][symbol] = states_kernels[new_kernel]
+                        go_to[count][symbol] = states_kernels[frozen_new_kernel]
                     else:
-                        go_to[count] = {symbol: states_kernels[new_kernel]}
+                        go_to[count] = {symbol: states_kernels[frozen_new_kernel]}
                     continue
 
                 new_items: set[Item] = GrammarUtils.get_clousure(
                     self._grammar,
-                    {item.move_dot() for item in new_kernel},
+                    {item.move_dot() for item in frozen_new_kernel},
                     firsts,
                 )
                 states[num_states] = new_items
@@ -201,7 +201,7 @@ class ParserLR1:
                 else:
                     go_to[count] = {symbol: num_states}
 
-                states_kernels[new_kernel] = num_states
+                states_kernels[frozen_new_kernel] = num_states
 
                 num_states += 1
 

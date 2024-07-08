@@ -2,7 +2,6 @@
 This module contains the AST nodes for the Hulk programming language.
 """
 
-from dataclasses import dataclass
 from enum import Enum
 
 from ...semantic_analizer.types import Type, UnknownType
@@ -67,12 +66,16 @@ class TypeDeclaration(DefineStatement):
         inherits: "Inherits",
         attributes: list["AttributeDeclaration"],
         functions: list["FunctionDeclaration"],
+        line=None,
+        column=None,
     ) -> None:
         self.identifier: str = identifier
         self.params: list["Parameter"] = params
         self.inherits: "Inherits" = inherits
         self.attributes: list["AttributeDeclaration"] = attributes
         self.functions: list["FunctionDeclaration"] = functions
+        self.line: int = line
+        self.column: int = column
 
 
 class Inherits(ASTNode):
@@ -80,9 +83,13 @@ class Inherits(ASTNode):
     Represents an inherits node in the AST.
     """
 
-    def __init__(self, identifier: str, arguments: list["Expression"]) -> None:
+    def __init__(
+        self, identifier: str, arguments: list["Expression"], line=None, column=None
+    ) -> None:
         self.identifier: str = identifier
         self.arguments: list["Expression"] = arguments
+        self.line: int = line
+        self.column: int = column
 
 
 class AttributeDeclaration(ASTNode):
@@ -95,10 +102,14 @@ class AttributeDeclaration(ASTNode):
         identifier: str,
         expression: "Expression",
         static_type: str | None = None,
+        line=None,
+        column=None,
     ):
         self.identifier: str = identifier
         self.expression: "Expression" = expression
         self.static_type: str | None = static_type
+        self.line: int = line
+        self.column: int = column
 
 
 class FunctionDeclaration(DefineStatement):
@@ -112,12 +123,16 @@ class FunctionDeclaration(DefineStatement):
         params: list["Parameter"],
         body: "Expression",
         declared_return_type: str | None = None,
+        line=None,
+        column=None,
     ) -> None:
         self.identifier: str = identifier
         self.params: list["Parameter"] = params
         self.body: "Expression" = body
         self.static_return_type: str | None = declared_return_type
         self.inferred_return_type: Type = UnknownType()
+        self.line: int = line
+        self.column: int = column
 
 
 class Parameter(ASTNode):
@@ -130,11 +145,15 @@ class Parameter(ASTNode):
         identifier: str,
         static_type: str | None = None,
         inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ) -> None:
 
         self.identifier: str = identifier
         self.static_type: str | None = static_type
         self.inferred_type: Type = inferred_type
+        self.line: int = line
+        self.column: int = column
 
 
 class ProtocolDeclaration(DefineStatement):
@@ -143,11 +162,18 @@ class ProtocolDeclaration(DefineStatement):
     """
 
     def __init__(
-        self, identifier: str, extends: list[str], functions: list[FunctionDeclaration]
+        self,
+        identifier: str,
+        extends: list[str],
+        functions: list[FunctionDeclaration],
+        line=None,
+        column=None,
     ):
         self.identifier: str = identifier
         self.extends: list[str] = extends
         self.functions: list[FunctionDeclaration] = functions
+        self.line: int = line
+        self.column: int = column
 
 
 class Expression(ASTNode):
@@ -170,11 +196,15 @@ class VariableDeclaration(Expression):
         expression: Expression,
         static_type: str | None = None,
         inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ):
 
         self.identifier: str = identifier
         self.expression: Expression = expression
         self.static_type: str | None = static_type
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -183,8 +213,12 @@ class Identifier(Expression):
     Represents a variable node in the AST.
     """
 
-    def __init__(self, identifier, inferred_type: Type = UnknownType()):
+    def __init__(
+        self, identifier, inferred_type: Type = UnknownType(), line=None, column=None
+    ):
         self.identifier: str = identifier
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -194,10 +228,17 @@ class AttributeCall(Expression):
     """
 
     def __init__(
-        self, obj: Expression, identifier: str, inferred_type: Type = UnknownType()
+        self,
+        obj: Expression,
+        identifier: str,
+        inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ) -> None:
         self.obj: Expression = obj
         self.identifier: str = identifier
+        self.line = line
+        self.column = column
         super().__init__(inferred_type)
 
 
@@ -211,9 +252,13 @@ class DestructiveAssign(Expression):
         identifier: Identifier | AttributeCall,
         expression: Expression,
         inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ) -> None:
         self.identifier: Identifier | AttributeCall = identifier
         self.expression: Expression = expression
+        self.line = line
+        self.column = column
         super().__init__(inferred_type)
 
 
@@ -227,9 +272,13 @@ class FunctionCall(Expression):
         obj: Expression,
         invocation: "Invocation",
         inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ):
         self.obj: Expression = obj
         self.invocation: "Invocation" = invocation
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -247,9 +296,13 @@ class Invocation(Expression):
         identifier: str,
         arguments: list["Expression"],
         inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ):
         self.identifier: str = identifier
         self.arguments: list["Expression"] = arguments
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -363,9 +416,13 @@ class Instanciate(Expression):
         identifier: str,
         params: list[Expression],
         inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ):
         self.identifier: str = identifier
         self.params: list[Expression] = params
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -379,9 +436,13 @@ class Vector(Expression):
         elements: list["LiteralNode"],
         elements_type: Type = UnknownType(),
         inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ):
         self.elements: list["LiteralNode"] = elements
         self.elements_type: Type = elements_type
+        self.lin = line
+        self.column = column
         super().__init__(inferred_type)
 
 
@@ -396,10 +457,14 @@ class ComprehensionVector(Expression):
         identifier: str,
         iterator: Expression,
         inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ):
         self.generator: Expression = generator
         self.identifier: str = identifier
         self.iterator: Expression = iterator
+        self.line = line
+        self.column = column
         super().__init__(inferred_type)
 
 
@@ -409,10 +474,17 @@ class IndexNode(Expression):
     """
 
     def __init__(
-        self, obj: Expression, index: Expression, inferred_type: Type = UnknownType()
+        self,
+        obj: Expression,
+        index: Expression,
+        inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ) -> None:
         self.obj: Expression = obj
         self.index: Expression = index
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -427,10 +499,14 @@ class BinaryExpression(Expression):
         left: Expression,
         right: Expression,
         inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
     ):
         self.operator: Operator = operator
         self.left: Expression = left
         self.right: Expression = right
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -439,8 +515,16 @@ class NotNode(Expression):
     Represents a not node in the AST.
     """
 
-    def __init__(self, expression: Expression, inferred_type: Type = UnknownType()):
+    def __init__(
+        self,
+        expression: Expression,
+        inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
+    ):
         self.expression: Expression = expression
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -449,8 +533,16 @@ class PositiveNode(Expression):
     Represents a positive node in the AST.
     """
 
-    def __init__(self, expression: Expression, inferred_type: Type = UnknownType()):
+    def __init__(
+        self,
+        expression: Expression,
+        inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
+    ):
         self.expression: Expression = expression
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -459,8 +551,16 @@ class NegativeNode(Expression):
     Represents a not node in the AST.
     """
 
-    def __init__(self, expression: Expression, inferred_type: Type = UnknownType()):
+    def __init__(
+        self,
+        expression: Expression,
+        inferred_type: Type = UnknownType(),
+        line=None,
+        column=None,
+    ):
         self.expression: Expression = expression
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)
 
 
@@ -469,6 +569,14 @@ class LiteralNode(Expression):
     Represents a literal node in the AST.
     """
 
-    def __init__(self, value: str, inferred_type: Type) -> None:
+    def __init__(
+        self,
+        value: str,
+        inferred_type: Type,
+        line=None,
+        column=None,
+    ) -> None:
         self.value: str = value
+        self.line: int = line
+        self.column: int = column
         super().__init__(inferred_type)

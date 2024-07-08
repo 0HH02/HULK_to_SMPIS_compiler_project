@@ -34,7 +34,7 @@ class DataNode(Node):
 class FunctionNode(Node):
     def __init__(self, fname, params, localvars, instructions):
         self.name = fname
-        self.params = params
+        self.params: list[ParamNode] = params
         self.localvars = localvars
         self.instructions = instructions
 
