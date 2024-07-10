@@ -39,7 +39,7 @@ def test_all() -> None:
     TEST_FOLDER = "testers/test"
     # Iterate over all files in the test folder
     for i, filename in enumerate(os.listdir(TEST_FOLDER)):
-        if i > 27:
+        if i > -1:
             # Get the full path to the file
             file_path: str = os.path.join(TEST_FOLDER, filename)
 

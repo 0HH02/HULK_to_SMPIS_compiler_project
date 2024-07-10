@@ -26,7 +26,7 @@ class BaseHULKToCILVisitor:
 
     def register_local(self, vinfo: IdentifierVar):
         vinfo.name = (
-            f"local_{self.current_function.name[9:]}_{vinfo.name}_{len(self.localvars)}"
+            f"local&{self.current_function.name[9:]}&{vinfo.name}&{len(self.localvars)}"
         )
         local_node = LocalNode(vinfo.name)
         self.localvars.append(local_node)
@@ -37,7 +37,7 @@ class BaseHULKToCILVisitor:
         return self.register_local(vinfo)
 
     def define_type_local(self, name: str):
-        name = f"local_{self.current_type.name}_{name}"
+        name = f"local&{self.current_type.name}&{name}"
         return name
 
     def register_instruction(self, instruction):
@@ -45,7 +45,7 @@ class BaseHULKToCILVisitor:
         return instruction
 
     def to_function_name(self, method_name: str, type_name: str):
-        return f"function_{method_name}_at_{type_name}"
+        return f"function&{method_name}&at&{type_name}"
 
     def register_function(self, function_name: str):
         function_node = FunctionNode(function_name, [], [], [])
@@ -58,7 +58,7 @@ class BaseHULKToCILVisitor:
         return type_node
 
     def register_data(self, value):
-        vname = f"data_{len(self.dotdata)}"
+        vname = f"data&{len(self.dotdata)}"
         data_node = ArrayNode(value, vname)
         self.dotdata.append(data_node)
         return data_node

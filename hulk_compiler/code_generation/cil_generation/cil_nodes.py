@@ -134,7 +134,7 @@ class GetAttribNode(InstructionNode):
 
 class SetAttribNode(InstructionNode):
     def __init__(self, source, dest, value):
-        self.dest = dest
+        self.dest: str = dest
         self.source = source
         self.value = value
 

@@ -121,11 +121,33 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
                 [
                     AttributeDeclaration("elements", Identifier("elements")),
                     AttributeDeclaration("length", Identifier("length")),
-                    AttributeDeclaration("current", LiteralNode("0", NumberType())),
+                    AttributeDeclaration("current", LiteralNode("-1", NumberType())),
                 ],
                 [
-                    FunctionDeclaration("current", [], LiteralNode("1", None)),
-                    FunctionDeclaration("next", [], LiteralNode("2", None)),
+                    FunctionDeclaration(
+                        "current",
+                        [],
+                        Invocation(
+                            "get_item_vector",
+                            [AttributeCall(Identifier("self"), "current")],
+                        ),
+                    ),
+                    FunctionDeclaration(
+                        "next",
+                        [],
+                        BinaryExpression(
+                            Operator.LT,
+                            DestructiveAssign(
+                                AttributeCall(Identifier("self"), "current"),
+                                BinaryExpression(
+                                    Operator.ADD,
+                                    AttributeCall(Identifier("self"), "current"),
+                                    LiteralNode("1", NumberType()),
+                                ),
+                            ),
+                            AttributeCall(Identifier("self"), "length"),
+                        ),
+                    ),
                     FunctionDeclaration("get_item", [], LiteralNode("2", None)),
                 ],
             )
@@ -181,18 +203,18 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
                 self.current_type.methods.append([method[0], method[1]])
 
         self.current_function = self.register_function(
-            f"function_{node.identifier}_constructor"
+            f"function&{node.identifier}&constructor"
         )
         self.current_type.methods.append(
-            ["constructor", f"function_{node.identifier}_constructor"]
+            ["constructor", f"function&{node.identifier}&constructor"]
         )
         context.define_method(
-            "contructor", f"function_{node.identifier}_constructor", len(node.params)
+            "contructor", f"function&{node.identifier}&constructor", len(node.params)
         )
         if node.inherits:
             if node.inherits.arguments:
                 for attr in node.params:
-                    param_name = f"{self.current_function.name[9:]}_{attr.identifier}_{len(self.localvars)}"
+                    param_name = f"{self.current_function.name[9:]}&{attr.identifier}&{len(self.localvars)}"
                     context.define_variable(attr.identifier, param_name)
                     self.current_function.params.append(ParamNode(param_name))
                 args = []
@@ -201,26 +223,41 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
                     args.append(result)
                 for arg in args:
                     self.register_instruction(ArgNode(arg))
-                result = self.register_local(IdentifierVar("constructor_result", None))
+                result = self.register_local(IdentifierVar("constructor&result", None))
                 self.register_instruction(
                     DynamicCallNode(
                         self.current_type.name,
-                        f"function_{node.inherits.identifier}_constructor",
+                        f"function&{node.inherits.identifier}&constructor",
                         result,
                     )
                 )
             else:
-                result = self.register_local(IdentifierVar("constructor_result", None))
+                father = TypeNode("None")
+                for t in self.dottypes:
+                    if t.name == node.inherits.identifier:
+                        father = t
+                        break
+                args = []
+                for attr, value in father.attributes.items():
+                    param_name = (
+                        f"{self.current_function.name[9:]}&{attr}&{len(self.localvars)}"
+                    )
+                    context.define_variable(attr, param_name)
+                    self.current_function.params.append(ParamNode(param_name))
+                    args.append(param_name)
+                for arg in args:
+                    self.register_instruction(ArgNode(arg))
+                result = self.register_local(IdentifierVar("constructor&result", None))
                 self.register_instruction(
                     DynamicCallNode(
                         self.current_type.name,
-                        f"function_{node.inherits.identifier}_constructor",
+                        f"function&{node.inherits.identifier}&constructor",
                         result,
                     )
                 )
         elif node.params:
             for attr in node.params:
-                param_name = f"{self.current_function.name[9:]}_{attr.identifier}_{len(self.localvars)}"
+                param_name = f"{self.current_function.name[9:]}&{attr.identifier}&{len(self.localvars)}"
                 context.define_variable(attr.identifier, param_name)
                 self.current_function.params.append(ParamNode(param_name))
             for attr in node.attributes:
@@ -244,9 +281,9 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
     def generate_cil(self, node: AttributeDeclaration, context: Context):
         attr_name = (
             self.current_type.name
-            + "_"
+            + "&"
             + node.identifier
-            + "_"
+            + "&"
             + str(len(self.current_type.attributes))
         )
         self.current_type.attributes[node.identifier] = attr_name
@@ -258,8 +295,8 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
     @dispatch(AttributeCall, Context)
     def generate_cil(self, node: AttributeCall, context: Context):
-        obj = self.generate_cil(node.obj, context)
-        if "self" in obj:
+        cil: str = self.generate_cil(node.obj, context)
+        if "self" in cil:
             value = self.current_type.attributes[node.identifier]
             return value
 
@@ -271,12 +308,12 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         self.current_function: FunctionNode = self.register_function(function_name)
         context.define_method(node.identifier, self.current_function, len(node.params))
 
-        param_name = f"{self.current_function.name[9:]}_self_{len(self.localvars)}"
+        param_name = f"{self.current_function.name[9:]}&self&{len(self.localvars)}"
         param_node = ParamNode(param_name)
         context.define_variable("self", param_name)
         self.current_function.params.append(param_node)
         for param in node.params:
-            param_name = f"{self.current_function.name[9:]}_{param.identifier}_{len(self.localvars)}"
+            param_name = f"{self.current_function.name[9:]}&{param.identifier}&{len(self.localvars)}"
             param_node = ParamNode(param_name)
             context.define_variable(param.identifier, param_name)
             self.current_function.params.append(param_node)
@@ -335,7 +372,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
         reference = self.register_local(
             IdentifierVar(
-                f"value_{node.value}_{len(self.current_function.localvars)}", None
+                f"value&{node.value}&{len(self.current_function.localvars)}", None
             )
         )
         self.register_instruction(AssignNode(reference, node.value))
@@ -350,7 +387,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         result = self.define_internal_local()
         self.register_instruction(AllocateNode(node.identifier, instance))
         self.register_instruction(
-            StaticCallNode(f"{node.identifier}_constructor", result)
+            DynamicCallNode(node.identifier, f"{node.identifier}&constructor", result)
         )
         return instance
 
@@ -376,7 +413,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
             self.register_instruction(ArgNode(max_value))
             result = self.register_local(IdentifierVar("cache", None))
             self.register_instruction(
-                DynamicCallNode("range", "range_constructor", result)
+                DynamicCallNode("range", "range&constructor", result)
             )
             return instance
 
@@ -423,7 +460,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         left = self.generate_cil(node.left, context.create_child_context())
         right = self.generate_cil(node.right, context.create_child_context())
         result = self.register_local(
-            IdentifierVar(f"value_{len(self.current_function.localvars)}", None)
+            IdentifierVar(f"value&{len(self.current_function.localvars)}", None)
         )
         if OPER_TO_CLASS[node.operator] is ConcatNode:
             self.register_instruction(
@@ -434,6 +471,11 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
                     right,
                     node.right.inferred_type,
                 )
+            )
+            return result
+        if OPER_TO_CLASS[node.operator] is IsNode:
+            self.register_instruction(
+                OPER_TO_CLASS[node.operator](result, left, node.right.identifier)
             )
             return result
         self.register_instruction(OPER_TO_CLASS[node.operator](result, left, right))
@@ -459,14 +501,14 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
     @dispatch(While, Context)
     def generate_cil(self, node: While, context: Context):
-        self.register_instruction(LabelNode("while_condition"))
+        self.register_instruction(LabelNode("while&condition"))
         condition = self.generate_cil(node.condition, context.create_child_context())
-        self.register_instruction(GotoIfNode(condition, "while_start"))
-        self.register_instruction(GotoNode("while_end"))
-        self.register_instruction(LabelNode("while_start"))
+        self.register_instruction(GotoIfNode(condition, "while&start"))
+        self.register_instruction(GotoNode("while&end"))
+        self.register_instruction(LabelNode("while&start"))
         result = self.generate_cil(node.body, context.create_child_context())
-        self.register_instruction(GotoNode("while_condition"))
-        self.register_instruction(LabelNode("while_end"))
+        self.register_instruction(GotoNode("while&condition"))
+        self.register_instruction(LabelNode("while&end"))
         return result
 
     @dispatch(DestructiveAssign, Context)
@@ -481,30 +523,30 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         result = self.define_internal_local()
         # conditions
         condition = self.generate_cil(node.condition, context.create_child_context())
-        self.register_instruction(GotoIfNode(condition, "if_true"))
+        self.register_instruction(GotoIfNode(condition, "if&true"))
         for i, elif_node in enumerate(node.elif_clauses):
             condition = self.generate_cil(
                 elif_node.condition, context.create_child_context()
             )
-            self.register_instruction(GotoIfNode(condition, "if_true_" + str(i)))
+            self.register_instruction(GotoIfNode(condition, "if&true&" + str(i)))
         if_result = self.generate_cil(node.else_body, context.create_child_context())
         self.register_instruction(MoveNode(result, if_result))
-        self.register_instruction(GotoNode("if_end"))
+        self.register_instruction(GotoNode("if&end"))
 
         # body
-        self.register_instruction(LabelNode("if_true"))
+        self.register_instruction(LabelNode("if&true"))
         if_result = self.generate_cil(node.body, context.create_child_context())
         self.register_instruction(MoveNode(result, if_result))
-        self.register_instruction(GotoNode("if_end"))
+        self.register_instruction(GotoNode("if&end"))
         for i, elif_node in enumerate(node.elif_clauses):
-            self.register_instruction(LabelNode("if_true_" + str(i)))
+            self.register_instruction(LabelNode("if&true&" + str(i)))
             if_result = self.generate_cil(
                 elif_node.body, context.create_child_context()
             )
             self.register_instruction(MoveNode(result, if_result))
-            self.register_instruction(LabelNode("if_end"))
+            self.register_instruction(LabelNode("if&end"))
 
-        self.register_instruction(LabelNode("if_end"))
+        self.register_instruction(LabelNode("if&end"))
         return result
 
     @dispatch(Identifier, Context)
@@ -534,7 +576,7 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
 
         result = self.define_internal_local()
         self.register_instruction(
-            StaticCallNode(f"function_vector_constructor", result)
+            DynamicCallNode("array", f"function&vector&constructor", result)
         )
         return instance
 
@@ -545,9 +587,9 @@ class HULKToCILVisitor(BaseHULKToCILVisitor):
         else:
             index = context.get_var(node.index.identifier)
         vector = context.get_var(node.obj.identifier)
-        result = self.register_local(IdentifierVar("indexed_value", None))
+        result = self.register_local(IdentifierVar("indexed&value", None))
         self.register_instruction(ArgNode(index))
-        self.register_instruction(DynamicCallNode(vector, "get_item", result))
+        self.register_instruction(DynamicCallNode(vector, "get&item", result))
         return result
 
     @dispatch(ComprehensionVector, Context)

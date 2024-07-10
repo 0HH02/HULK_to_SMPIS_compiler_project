@@ -3,6 +3,7 @@ from multipledispatch import dispatch
 from hulk_compiler.code_generation.cil_generation.cil_nodes import *
 from hulk_compiler.code_generation.cil_generation.cil_nodes import FunctionNode
 from hulk_compiler.semantic_analizer.types import Type
+import random
 
 # pylint: disable=undefined-variable
 # pylint: disable=function-redefined
@@ -38,8 +39,23 @@ class cil_interpreter:
         self.current_function: str = node.name
         self.program_counter[node.name] = 0
         self.function_labels[node.name] = {}
-        for i, param in enumerate(node.params[1:]):
-            self.locals[param.name] = self.locals[self.args[i]]
+        params = node.params[:] if "constructor" in node.name else node.params[1:]
+        args_count_diferent = len(self.args) - len(params)
+        if args_count_diferent >= 0:
+            for i, param in enumerate(params):
+                if isinstance(self.args[args_count_diferent + i], str):
+                    if "data" in self.args[args_count_diferent + i]:
+                        self.locals[param.name] = self.data[
+                            self.args[args_count_diferent + i]
+                        ]
+
+                    else:
+                        self.locals[param.name] = self.locals[
+                            self.args[args_count_diferent + i]
+                        ]
+                else:
+                    self.locals[param.name] = self.args[args_count_diferent + i]
+
         self.args = []
 
         for i, instr in enumerate(node.instructions):
@@ -48,6 +64,7 @@ class cil_interpreter:
 
         while self.program_counter[node.name] < len(node.instructions):
             self.visit(node.instructions[self.program_counter[node.name]])
+            self.current_function: str = node.name
             self.program_counter[node.name] += 1
 
     @dispatch(AssignNode)
@@ -110,6 +127,10 @@ class cil_interpreter:
     def visit(self, node: PowNode):
         self.locals[node.dest] = self.locals[node.left] ** self.locals[node.right]
 
+    @dispatch(IsNode)
+    def visit(self, node: IsNode):
+        self.locals[node.dest] = self.locals[node.left].name == node.right
+
     @dispatch(PrintNode)
     def visit(self, node: PrintNode):
         if "data" in node.str_addr:
@@ -126,12 +147,26 @@ class cil_interpreter:
         if "data" in node.left:
             left = self.data[node.left][1:-1]
         else:
-            left = self.locals[node.left]
+            aux = (node.left).split("&")
+            for f, value in self.function_labels.items():
+                if f"function&{aux[0]}" in f:
+                    aux[0] = self.current_type.name
+                    left = self.locals["&".join(aux)]
+                    break
+            else:
+                left = self.locals[node.left]
 
         if "data" in node.right:
             right = self.data[node.right][1:-1]
         else:
-            right = self.locals[node.right]
+            aux = (node.right).split("&")
+            for f, value in self.function_labels.items():
+                if f"function&{aux[0]}" in f:
+                    aux[0] = self.current_type.name
+                    right = self.locals["&".join(aux)]
+                    break
+            else:
+                right = self.locals[node.right]
 
         self.locals[node.dest] = str(left) + str(right)
 
@@ -158,6 +193,19 @@ class cil_interpreter:
                 self.locals[self.args[0]], self.locals[self.args[1]]
             )
             self.args = []
+        elif node.function == "rand":
+            self.locals[node.dest] = random.random()
+            self.args = []
+        elif node.function == "base":
+            funct: FunctionNode = [
+                f for f in self.functions if node.function in f.name
+            ][0]
+            self.visit(funct)
+            self.locals[node.dest] = self.locals[self.return_var]
+        elif node.function == "get_item_vector":
+            self.locals[node.dest] = self.types[
+                self.current_type.name
+            ].attributes.values()[0][self.locals[self.visit(self.args[0])]]
         else:
             funct: FunctionNode = [
                 f for f in self.functions if node.function in f.name
@@ -175,6 +223,8 @@ class cil_interpreter:
             source = self.data[node.source]
         else:
             source = self.locals[node.source]
+        if isinstance(source, Type):
+            self.types[node.dest] = source
         self.locals[node.dest] = source
 
     @dispatch(GotoIfNode)
@@ -204,8 +254,18 @@ class cil_interpreter:
         self.current_type = self.types[node.type]
         funct: FunctionNode = [f for f in self.functions if node.method in f.name][0]
         self.visit(funct)
-        self.locals[node.dest] = self.locals[self.return_var]
+        if "constructor" not in funct.name:
+            self.locals[node.dest] = self.locals[self.return_var]
 
     @dispatch(SetAttribNode)
     def visit(self, node: SetAttribNode):
-        self.current_type.attributes[node.attr] = self.locals[node.value]
+        dest = node.dest
+        if "constructor" in node.value:
+            aux = (node.dest).split("&")
+            aux[0] = self.current_type.name
+            dest = "&".join(aux)
+            source = self.locals[node.value]
+        else:
+            source = node.value
+        self.locals[dest] = source
+        self.current_type.attributes[dest] = node.value
